@@ -1,26 +1,26 @@
 package de.svenkubiak.http;
 
-import java.io.IOException;
+import de.svenkubiak.utils.Utils;
+
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class Http {
     public static final String URL_CAN_NOT_BE_NULL = "url can not be null";
     public static final String METHOD_CAN_NOT_BE_NULL = "method can not be null";
-    private final HttpClient client = HttpClient.newHttpClient();
     private final String url;
     private final String method;
+    private final Map<String, String> headers = new HashMap<>();
     private String body = "";
-    private Map<String, String> headers = new HashMap<>();
     private Duration timeout = Duration.of(10, SECONDS);
+    private boolean followRedirects;
+    private boolean disableValidation;
 
     private Http(String url, String method) {
         this.url = Objects.requireNonNull(url, URL_CAN_NOT_BE_NULL);
@@ -53,18 +53,26 @@ public class Http {
 
     public Result send() {
         Result result = new Result();
-        try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
+        HttpClient.Builder clientBuilder = HttpClient.newBuilder();
+        if (followRedirects) {
+            clientBuilder.followRedirects(HttpClient.Redirect.ALWAYS);
+        }
+
+        if (disableValidation) {
+            clientBuilder.sslContext(Utils.getSSLContext());
+        }
+
+        try (HttpClient httpClient = clientBuilder.build()) {
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(new URI(url))
-                    .version(HttpClient.Version.HTTP_2)
                     .timeout(timeout)
                     .method(method, HttpRequest.BodyPublishers.ofString(body));
 
             if (!headers.isEmpty()) {
-                headers.forEach(builder::header);
+                headers.forEach(requestBuilder::header);
             }
 
-            HttpResponse<String> response = client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
             result.withBody(response.body()).withStatus(response.statusCode());
         } catch (Exception e) {
             result.withError(e.getMessage());
@@ -88,6 +96,16 @@ public class Http {
 
     public Http body(String body) {
         this.body = Objects.requireNonNull(body, "body can not be null");
+        return this;
+    }
+
+    public Http followRedirects() {
+        this.followRedirects = true;
+        return this;
+    }
+
+    public Http disableValidation() {
+        this.disableValidation = true;
         return this;
     }
 }

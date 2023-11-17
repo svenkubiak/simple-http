@@ -2,11 +2,8 @@ package de.svenkubiak.http;
 
 public class Result {
     private String body;
-
     private String error;
-
     private int status;
-
     public Result () {
     }
 
