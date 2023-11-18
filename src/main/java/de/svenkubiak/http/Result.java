@@ -1,19 +1,17 @@
 package de.svenkubiak.http;
 
+import de.svenkubiak.utils.Utils;
+
+import java.util.Arrays;
+import java.util.Objects;
+
 public class Result {
-    private String body;
-    private String error;
-    private int status;
-    public Result () {
-    }
+    private String body = "";
+    private int status = -1;
+    public Result () {}
 
     public Result withBody(String body) {
-        this.body = body;
-        return this;
-    }
-
-    public Result withError(String error) {
-        this.error = error;
+        this.body = (body == null || body.isEmpty()) ? "" : body;
         return this;
     }
 
@@ -26,15 +24,17 @@ public class Result {
         return body;
     }
 
-    public String error() {
-        return error;
-    }
+    public String error() { return body; }
 
     public int status() {
         return status;
     }
 
-    public boolean isSuccess() {
-        return error == null || error.isBlank();
+    public boolean isValid() {
+        return Utils.isSuccessCode(status);
+    }
+
+    public boolean isValid(int... expectedStatus) {
+        return Arrays.stream(expectedStatus).anyMatch(s -> s == status);
     }
 }

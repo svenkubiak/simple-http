@@ -12,8 +12,6 @@ import java.util.*;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class Http {
-    public static final String URL_CAN_NOT_BE_NULL = "url can not be null";
-    public static final String METHOD_CAN_NOT_BE_NULL = "method can not be null";
     private final String url;
     private final String method;
     private final Map<String, String> headers = new HashMap<>();
@@ -23,36 +21,30 @@ public class Http {
     private boolean disableValidation;
 
     private Http(String url, String method) {
-        this.url = Objects.requireNonNull(url, URL_CAN_NOT_BE_NULL);
-        this.method = Objects.requireNonNull(method, METHOD_CAN_NOT_BE_NULL);
+        this.url = Objects.requireNonNull(url, "url can not be null");
+        this.method = Objects.requireNonNull(method, "method can not be null");
     }
     public static Http get(String url) {
-        Objects.requireNonNull(url, URL_CAN_NOT_BE_NULL);
         return new Http(url, "GET");
     }
 
     public static Http post(String url) {
-        Objects.requireNonNull(url, URL_CAN_NOT_BE_NULL);
         return new Http(url, "POST");
     }
 
     public static Http put(String url) {
-        Objects.requireNonNull(url, URL_CAN_NOT_BE_NULL);
         return new Http(url, "PUT");
     }
 
     public static Http patch(String url) {
-        Objects.requireNonNull(url, URL_CAN_NOT_BE_NULL);
         return new Http(url, "PATCH");
     }
 
     public static Http delete(String url) {
-        Objects.requireNonNull(url, URL_CAN_NOT_BE_NULL);
         return new Http(url, "DELETE");
     }
 
     public Result send() {
-        Result result = new Result();
         HttpClient.Builder clientBuilder = HttpClient.newBuilder();
         if (followRedirects) {
             clientBuilder.followRedirects(HttpClient.Redirect.ALWAYS);
@@ -62,6 +54,7 @@ public class Http {
             clientBuilder.sslContext(Utils.getSSLContext());
         }
 
+        Result result = new Result();
         try (HttpClient httpClient = clientBuilder.build()) {
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(new URI(url))
@@ -75,7 +68,7 @@ public class Http {
             HttpResponse<String> response = httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
             result.withBody(response.body()).withStatus(response.statusCode());
         } catch (Exception e) {
-            result.withError(e.getMessage());
+            result.withBody(e.getMessage());
         }
 
         return result;

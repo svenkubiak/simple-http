@@ -7,8 +7,16 @@ import javax.net.ssl.X509ExtendedTrustManager;
 import java.net.Socket;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.util.List;
 
 public final class Utils {
+    @SuppressWarnings("rawtypes")
+    private static final List SUCCESS_CODES;
+
+    static {
+        SUCCESS_CODES = List.of(200, 201, 202, 203, 204, 205, 206, 207, 208, 226);
+    }
+
     private static final X509ExtendedTrustManager TRUST_MANAGER = new X509ExtendedTrustManager() {
         @Override
         public X509Certificate[] getAcceptedIssuers() {
@@ -50,5 +58,9 @@ public final class Utils {
         }
 
         return sslContext;
+    }
+
+    public static boolean isSuccessCode(int statuscode) {
+        return SUCCESS_CODES.contains(statuscode);
     }
 }
