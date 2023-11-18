@@ -1,17 +1,21 @@
 package de.svenkubiak.http;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import java.time.Duration;
+import java.util.UUID;
 
-@WireMockTest(httpPort = 8080)
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static java.time.temporal.ChronoUnit.SECONDS;
+
+@WireMockTest(httpsEnabled = true, httpPort = 8080, httpsPort = 9090)
 public class HttpTests {
     private static final String RESPONSE = "hello, world!";
+    public static final String REQUEST_TIMED_OUT = "request timed out";
 
     @Test
     void TestGet(WireMockRuntimeInfo runtime) {
@@ -21,6 +25,98 @@ public class HttpTests {
 
         //when
         Result result = Http.get(runtime.getHttpBaseUrl()).send();
+
+        //then
+        Assertions.assertEquals(RESPONSE, result.body());
+    }
+
+    @Test
+    void TestResponseHeader(WireMockRuntimeInfo runtime) {
+        //given
+        String uuid = UUID.randomUUID().toString();
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/").willReturn(ok().withBody(RESPONSE).withHeader("x-header", uuid)));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl()).send();
+
+        //then
+        Assertions.assertEquals(RESPONSE, result.body());
+        Assertions.assertEquals(uuid, result.header("x-header"));
+    }
+
+    @Test
+    void TestRequestHeader(WireMockRuntimeInfo runtime) {
+        //given
+        String uuid = UUID.randomUUID().toString();
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/").willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl()).header("Authorization", uuid).send();
+
+        //then
+        verify(
+                getRequestedFor(urlEqualTo("/"))
+                        .withHeader("Authorization", equalTo(uuid))
+        );
+        Assertions.assertEquals(RESPONSE, result.body());
+    }
+
+    @Test
+    void TestDefaultTimeout(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/").willReturn(ok().withBody(RESPONSE).withFixedDelay(11000)));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl()).send();
+
+        //then
+        Assertions.assertEquals(REQUEST_TIMED_OUT, result.body());
+    }
+
+    @Test
+    void TestTimeout(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/").willReturn(ok().withBody(RESPONSE).withFixedDelay(20000)));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl()).timeout(Duration.of(14, SECONDS)).send();
+
+        //then
+        Assertions.assertEquals(REQUEST_TIMED_OUT, result.body());
+    }
+
+    @Test
+    void TestDisableVerification(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/").willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Result result = Http.get(runtime.getHttpsBaseUrl()).disableValidation().send();
+
+        //then
+        Assertions.assertEquals(RESPONSE, result.body());
+    }
+
+    @Test
+    void TestFollowRedirects(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/redirect").willReturn(temporaryRedirect("/")));
+        wireMock.register(get("/").willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/redirect").send();
+
+        //then
+        Assertions.assertEquals("", result.body());
+
+        //when
+        result = Http.get(runtime.getHttpBaseUrl() + "/redirect").followRedirects().send();
 
         //then
         Assertions.assertEquals(RESPONSE, result.body());

@@ -3,9 +3,12 @@ package de.svenkubiak.http;
 import de.svenkubiak.utils.Utils;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class Result {
+    private Map<String, String> headers = new HashMap<>();
     private String body = "";
     private int status = -1;
     public Result () {}
@@ -20,8 +23,17 @@ public class Result {
         return this;
     }
 
+    public Result withHeader(String key, String value) {
+        this.headers.put(key, value);
+        return this;
+    }
+
     public String body() {
         return body;
+    }
+
+    public String header(String key) {
+        return headers.get(key);
     }
 
     public String error() { return body; }
