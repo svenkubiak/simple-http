@@ -15,9 +15,9 @@ public class Http {
     private final String url;
     private final String method;
     private final Map<String, String> headers = new HashMap<>();
-    private final Map<String, String> form = new HashMap<>();
     private String body = "";
     private Duration timeout = Duration.of(10, SECONDS);
+    HttpClient.Version version = HttpClient.Version.HTTP_2;
     private boolean followRedirects;
     private boolean disableValidation;
 
@@ -113,6 +113,17 @@ public class Http {
     }
 
     /**
+     * Sets the HTTP version to use. Defaults to HTTP/2
+     *
+     * @param version The version to set
+     * @return The Http instance
+     */
+    public Http version(HttpClient.Version version) {
+        this.version = Objects.requireNonNull(version, "version can not be null");
+        return this;
+    }
+
+    /**
      * Sets the body of the request
      *
      * @param body The body to set
@@ -141,6 +152,13 @@ public class Http {
         return this;
     }
 
+    /**
+     * Adds the given form data to the request while also setting
+     * content-type to "application/x-www-form-urlencoded"
+     *
+     * @param formData The form data
+     * @return The Http instance
+     */
     public Http body(Map<String, String> formData) {
         Objects.requireNonNull(formData, "formData can not be null");
 
@@ -151,6 +169,8 @@ public class Http {
 
     public Result send() {
         HttpClient.Builder clientBuilder = HttpClient.newBuilder();
+        clientBuilder.version(version);
+
         if (followRedirects) {
             clientBuilder.followRedirects(HttpClient.Redirect.ALWAYS);
         }
