@@ -5,9 +5,12 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 import java.net.Socket;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.Map;
 
 public final class Utils {
     @SuppressWarnings("rawtypes")
@@ -62,5 +65,19 @@ public final class Utils {
 
     public static boolean isSuccessCode(int statuscode) {
         return SUCCESS_CODES.contains(statuscode);
+    }
+
+    public static String getFormDataAsString(Map<String, String> formData) {
+        StringBuffer buffer = new StringBuffer();
+        for (Map.Entry<String, String> singleEntry : formData.entrySet()) {
+            if (!buffer.isEmpty()) {
+                buffer.append("&");
+            }
+            buffer.append(URLEncoder.encode(singleEntry.getKey(), StandardCharsets.UTF_8));
+            buffer.append("=");
+            buffer.append(URLEncoder.encode(singleEntry.getValue(), StandardCharsets.UTF_8));
+        }
+
+        return buffer.toString();
     }
 }

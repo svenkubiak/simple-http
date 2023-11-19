@@ -15,6 +15,7 @@ public class Http {
     private final String url;
     private final String method;
     private final Map<String, String> headers = new HashMap<>();
+    private final Map<String, String> form = new HashMap<>();
     private String body = "";
     private Duration timeout = Duration.of(10, SECONDS);
     private boolean followRedirects;
@@ -137,6 +138,14 @@ public class Http {
      */
     public Http disableValidation() {
         this.disableValidation = true;
+        return this;
+    }
+
+    public Http body(Map<String, String> formData) {
+        Objects.requireNonNull(formData, "formData can not be null");
+
+        this.body = Utils.getFormDataAsString(formData);
+        header("Content-Type", "application/x-www-form-urlencoded");
         return this;
     }
 
