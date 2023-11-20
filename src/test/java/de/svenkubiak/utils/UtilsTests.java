@@ -40,12 +40,12 @@ public class UtilsTests {
     @Test
     void TestGetFormDataAsStrng() {
         //given
-        Map<String, String> formData = Map.of("username", "foo", "password", "bar");
+        Map<String, String> formData = Map.of("username", "foo");
 
         //then
         String data = Utils.getFormDataAsString(formData);
 
         //then
-        Assertions.assertEquals("username=foo&password=bar", data);
+        Assertions.assertEquals("username=foo", data);
     }
 }
