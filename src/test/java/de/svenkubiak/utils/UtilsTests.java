@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.SSLContext;
 import java.util.List;
+import java.util.Map;
 
 public class UtilsTests {
 
@@ -34,5 +35,17 @@ public class UtilsTests {
 
         //then
         Assertions.assertNotNull(sslContext);
+    }
+
+    @Test
+    void TestGetFormDataAsStrng() {
+        //given
+        Map<String, String> formData = Map.of("username", "foo", "password", "bar");
+
+        //then
+        String data = Utils.getFormDataAsString(formData);
+
+        //then
+        Assertions.assertEquals("password=bar&username=foo", data);
     }
 }

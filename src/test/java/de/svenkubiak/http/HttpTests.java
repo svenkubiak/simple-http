@@ -53,7 +53,7 @@ public class HttpTests {
         wireMock.register(get("/").willReturn(ok().withBody(RESPONSE)));
 
         //when
-        Result result = Http.get(runtime.getHttpBaseUrl()).header("Authorization", uuid).send();
+        Result result = Http.get(runtime.getHttpBaseUrl()).withHeader("Authorization", uuid).send();
 
         //then
         verify(
@@ -83,7 +83,7 @@ public class HttpTests {
         wireMock.register(get("/").willReturn(ok().withBody(RESPONSE).withFixedDelay(20000)));
 
         //when
-        Result result = Http.get(runtime.getHttpBaseUrl()).timeout(Duration.of(14, SECONDS)).send();
+        Result result = Http.get(runtime.getHttpBaseUrl()).withTimeout(Duration.of(14, SECONDS)).send();
 
         //then
         Assertions.assertEquals(REQUEST_TIMED_OUT, result.body());

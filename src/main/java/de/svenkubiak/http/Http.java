@@ -28,8 +28,8 @@ public class Http {
 
     /**
      * Creates a new GET request to the given URL with a default timeout
-     * of 10 seconds and HTTP/2 with a fallback to HTTP/1.1 not following
-     * redirects by default
+     * of 10 seconds, HTTP/2 with a downgrade to HTTP/1.1 (if supported by the server),
+     * not following redirects and strict HTTPS certificate validation
      *
      * @param url The url to call
      * @return The Http instance
@@ -40,8 +40,8 @@ public class Http {
 
     /**
      * Creates a new POST request to the given URL with a default timeout
-     * of 10 seconds and HTTP/2 with a fallback to HTTP/1.1 not following
-     * redirects by default
+     * of 10 seconds, HTTP/2 with a downgrade to HTTP/1.1 (if supported by the server),
+     * not following redirects and strict HTTPS certificate validation
      *
      * @param url The url to call
      * @return The Http instance
@@ -52,8 +52,8 @@ public class Http {
 
     /**
      * Creates a new PUT request to the given URL with a default timeout
-     * of 10 seconds and HTTP/2 with a fallback to HTTP/1.1 not following
-     * redirects by default
+     * of 10 seconds, HTTP/2 with a downgrade to HTTP/1.1 (if supported by the server),
+     * not following redirects and strict HTTPS certificate validation
      *
      * @param url The url to call
      * @return The Http instance
@@ -64,8 +64,8 @@ public class Http {
 
     /**
      * Creates a new PATCH request to the given URL with a default timeout
-     * of 10 seconds and HTTP/2 with a fallback to HTTP/1.1 not following
-     * redirects by default
+     * of 10 seconds, HTTP/2 with a downgrade to HTTP/1.1 (if supported by the server),
+     * not following redirects and strict HTTPS certificate validation
      *
      * @param url The url to call
      * @return The Http instance
@@ -76,8 +76,8 @@ public class Http {
 
     /**
      * Creates a new DELETE request to the given URL with a default timeout
-     * of 10 seconds and HTTP/2 with a fallback to HTTP/1.1 not following
-     * redirects by default
+     * of 10 seconds, HTTP/2 with a downgrade to HTTP/1.1 (if supported by the server),
+     * not following redirects and strict HTTPS certificate validation
      *
      * @param url The url to call
      * @return The Http instance
@@ -93,7 +93,7 @@ public class Http {
      * @param value The value of the HTTP header
      * @return The Http instance
      */
-    public Http header(String key, String value) {
+    public Http withHeader(String key, String value) {
         Objects.requireNonNull(key, "key can not be null");
         Objects.requireNonNull(value, "value can not be null");
 
@@ -107,7 +107,7 @@ public class Http {
      * @param timeout The timeout to set
      * @return The Http instance
      */
-    public Http timeout(Duration timeout) {
+    public Http withTimeout(Duration timeout) {
         this.timeout = Objects.requireNonNull(timeout, "timeout can not be null");
         return this;
     }
@@ -118,7 +118,7 @@ public class Http {
      * @param version The version to set
      * @return The Http instance
      */
-    public Http version(HttpClient.Version version) {
+    public Http withVersion(HttpClient.Version version) {
         this.version = Objects.requireNonNull(version, "version can not be null");
         return this;
     }
@@ -129,13 +129,26 @@ public class Http {
      * @param body The body to set
      * @return The Http instance
      */
-    public Http body(String body) {
-        this.body = Objects.requireNonNull(body, "body can not be null");
+    public Http withBody(String body) {
+        setBody(body);
         return this;
     }
 
     /**
-     * Enables following of redirects which is disabled by default
+     * Adds the given form data to the request while also setting
+     * content-type to "application/x-www-form-urlencoded"
+     *
+     * @param formData The form data
+     * @return The Http instance
+     */
+    public Http withForm(Map<String, String> formData) {
+        setBody(body);
+        withHeader("Content-Type", "application/x-www-form-urlencoded");
+        return this;
+    }
+
+    /**
+     * Enables following of redirects
      * @return The Http instance
      */
     public Http followRedirects() {
@@ -152,19 +165,11 @@ public class Http {
         return this;
     }
 
-    /**
-     * Adds the given form data to the request while also setting
-     * content-type to "application/x-www-form-urlencoded"
-     *
-     * @param formData The form data
-     * @return The Http instance
-     */
-    public Http body(Map<String, String> formData) {
-        Objects.requireNonNull(formData, "formData can not be null");
-
-        this.body = Utils.getFormDataAsString(formData);
-        header("Content-Type", "application/x-www-form-urlencoded");
-        return this;
+    private void setBody(String body) {
+        Objects.requireNonNull(body, "body can not be null");
+        if (this.body == null || this.body.isEmpty()) {
+            this.body = body;
+        }
     }
 
     public Result send() {
