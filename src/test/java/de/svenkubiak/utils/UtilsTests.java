@@ -46,6 +46,6 @@ public class UtilsTests {
         String data = Utils.getFormDataAsString(formData);
 
         //then
-        Assertions.assertEquals("password=bar&username=foo", data);
+        Assertions.assertEquals("username=foo&password=bar", data);
     }
 }
