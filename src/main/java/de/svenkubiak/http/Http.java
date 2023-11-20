@@ -142,7 +142,7 @@ public class Http {
      * @return The Http instance
      */
     public Http withForm(Map<String, String> formData) {
-        setBody(body);
+        setBody(Utils.getFormDataAsString(formData));
         withHeader("Content-Type", "application/x-www-form-urlencoded");
         return this;
     }
