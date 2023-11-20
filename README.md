@@ -3,13 +3,13 @@
 Simple HTTP Java Client Library
 ================
 
-Zero-dependency Java HTTP client that wraps around the default HTTP Client that was introduced in Java 9 making HTTP requests in Java even simpler while covering probably the majority of the standard use-cases.
+Zero-dependency HTTP client that wraps around the default Java HTTP Client that was introduced in Java 9 making HTTP requests in Java even simpler while covering probably the majority of the standard use-cases.
 
 
 Requires Java 21.
 
 
-Supports GET, POST, PUT, PATCH and DELETE.
+Supports GET, POST, PUT, PATCH and DELETE. Sync calls only.
 
 Usage
 ------------------
@@ -24,7 +24,10 @@ Add the simple-http dependency to your pom.xml:
 </dependency>
 ```
 
-Simple HTTP GET call
+Examples
+------------------
+
+HTTP GET call
 
 ```
 Result result = Http.get("https://github.com").send();
@@ -36,14 +39,32 @@ if (result.isValid()) {
 }
 ```
 
-Full API
+Form post
 
 ```
 Result result = Http
-    .get("https://github.com")
-    .header("foo", "bar")
-    .timeout(Duration.of(2, SECONDS))
+    .post("https://mydomain.com")
+    .form(Map.of("username", "foo", "password", "bar"))
+    .send();
+```
+
+Sending JSON with additional header
+
+```
+String json = ...
+Result result = Http
+    .post("https://mydomain.com")
+    .header("Content-Type", "application/json")
+    .body(json)
+    .send();
+```
+
+GET request without HTTP certificate validation and following redirects
+
+```
+Result result = Http
+    .get("https://mydomain.com")
+    .disableValidations()
     .followRedirects()
-    .disabledValidation()
     .send();
 ```

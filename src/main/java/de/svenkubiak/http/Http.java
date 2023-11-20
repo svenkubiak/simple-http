@@ -160,7 +160,7 @@ public class Http {
      * Disables all HTTPS certificate validation
      * @return The Http instance
      */
-    public Http disableValidation() {
+    public Http disableValidations() {
         this.disableValidation = true;
         return this;
     }
@@ -195,7 +195,10 @@ public class Http {
                 headers.forEach(requestBuilder::header);
             }
 
-            HttpResponse<String> response = httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(
+                    requestBuilder.build(),
+                    HttpResponse.BodyHandlers.ofString());
+
             response
                     .headers()
                     .map()

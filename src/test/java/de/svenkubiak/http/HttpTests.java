@@ -1,21 +1,30 @@
 package de.svenkubiak.http;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
-@WireMockTest(httpsEnabled = true, httpPort = 8080, httpsPort = 9090)
+@WireMockTest(httpsEnabled = true, httpPort = 10256, httpsPort = 10257)
 public class HttpTests {
     private static final String RESPONSE = "hello, world!";
     public static final String REQUEST_TIMED_OUT = "request timed out";
+
+    @RegisterExtension
+    static WireMockExtension wm1 = WireMockExtension.newInstance()
+            .options(wireMockConfig().bindAddress("127.0.0.1"))
+            .build();
 
     @Test
     void TestGet(WireMockRuntimeInfo runtime) {
@@ -96,7 +105,7 @@ public class HttpTests {
         wireMock.register(get("/").willReturn(ok().withBody(RESPONSE)));
 
         //when
-        Result result = Http.get(runtime.getHttpsBaseUrl()).disableValidation().send();
+        Result result = Http.get(runtime.getHttpsBaseUrl()).disableValidations().send();
 
         //then
         Assertions.assertEquals(RESPONSE, result.body());
