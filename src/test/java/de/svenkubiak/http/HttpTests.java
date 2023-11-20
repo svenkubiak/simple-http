@@ -16,14 +16,14 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
-@WireMockTest(httpsEnabled = true, httpPort = 10256, httpsPort = 10257)
+@WireMockTest(httpsEnabled = true)
 public class HttpTests {
     private static final String RESPONSE = "hello, world!";
     public static final String REQUEST_TIMED_OUT = "request timed out";
 
     @RegisterExtension
     static WireMockExtension wm1 = WireMockExtension.newInstance()
-            .options(wireMockConfig().bindAddress("127.0.0.1"))
+            .options(wireMockConfig().bindAddress("127.0.0.1").port(10256).httpsPort(10257))
             .build();
 
     @Test
