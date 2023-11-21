@@ -44,7 +44,7 @@ Form post
 ```
 Result result = Http
     .post("https://mydomain.com")
-    .form(Map.of("username", "foo", "password", "bar"))
+    .withForm(Map.of("username", "foo", "password", "bar"))
     .send();
 ```
 
@@ -54,8 +54,8 @@ Sending JSON with additional header
 String json = ...
 Result result = Http
     .post("https://mydomain.com")
-    .header("Content-Type", "application/json")
-    .body(json)
+    .withHeader("Content-Type", "application/json")
+    .withBody(json)
     .send();
 ```
 
