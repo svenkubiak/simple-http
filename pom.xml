@@ -30,7 +30,7 @@
 		<tag>HEAD</tag>
 	</scm>
 	<name>Simple HTTP</name>
-	<description>Zeor-dependency conviniet wrapper around Java HTTP core functionalities</description>
+	<description>Zero-dependency convenient wrapper around Java HTTP core functionalities</description>
 	<url>https://github.com/svenkubiak/simple-http</url>
 	<build>
 		<resources>

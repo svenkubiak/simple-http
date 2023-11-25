@@ -6,13 +6,19 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 import java.net.Socket;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class Utils {
+    private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(16, 0.9f, 1);
+
     @SuppressWarnings("rawtypes")
     private static final List SUCCESS_CODES;
 
@@ -79,5 +85,31 @@ public final class Utils {
         }
 
         return buffer.toString();
+    }
+
+    public static HttpClient getHttpClient(String url, HttpClient.Version version, boolean followRedirects, boolean disableValidation) {
+        Objects.requireNonNull(url, "url can not be null");
+        Objects.requireNonNull(version, "version can not be null");
+
+        String key = url.toLowerCase(Locale.ENGLISH) + version + followRedirects + disableValidation;
+
+        HttpClient httpClient = HTTP_CLIENTS.get(key);
+        if (httpClient == null) {
+            HttpClient.Builder clientBuilder = HttpClient.newBuilder();
+            clientBuilder.version(version);
+
+            if (followRedirects) {
+                clientBuilder.followRedirects(HttpClient.Redirect.ALWAYS);
+            }
+
+            if (disableValidation) {
+                clientBuilder.sslContext(Utils.getSSLContext());
+            }
+
+            httpClient = clientBuilder.build();
+            HTTP_CLIENTS.put(key, httpClient);
+        }
+
+        return httpClient;
     }
 }

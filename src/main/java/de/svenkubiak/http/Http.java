@@ -173,19 +173,10 @@ public class Http {
     }
 
     public Result send() {
-        HttpClient.Builder clientBuilder = HttpClient.newBuilder();
-        clientBuilder.version(version);
-
-        if (followRedirects) {
-            clientBuilder.followRedirects(HttpClient.Redirect.ALWAYS);
-        }
-
-        if (disableValidation) {
-            clientBuilder.sslContext(Utils.getSSLContext());
-        }
+        HttpClient httpClient = Utils.getHttpClient(url, version, followRedirects, disableValidation);
 
         Result result = new Result();
-        try (HttpClient httpClient = clientBuilder.build()) {
+        try {
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(new URI(url))
                     .timeout(timeout)
