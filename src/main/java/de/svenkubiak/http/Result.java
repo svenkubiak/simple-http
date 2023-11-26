@@ -5,13 +5,11 @@ import de.svenkubiak.utils.Utils;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public class Result {
     private final Map<String, String> headers = new HashMap<>();
     private String body = "";
     private int status = -1;
-    public Result () {}
 
     public Result withBody(String body) {
         this.body = (body == null || body.isEmpty()) ? "" : body;

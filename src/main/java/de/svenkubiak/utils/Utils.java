@@ -10,20 +10,17 @@ import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class Utils {
     private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(16, 0.9f, 1);
 
     @SuppressWarnings("rawtypes")
-    private static final List SUCCESS_CODES;
+    private static final Set SUCCESS_CODES;
 
     static {
-        SUCCESS_CODES = List.of(200, 201, 202, 203, 204, 205, 206, 207, 208, 226);
+        SUCCESS_CODES = Set.of(200, 201, 202, 203, 204, 205, 206, 207, 208, 226);
     }
 
     private static final X509ExtendedTrustManager TRUST_MANAGER = new X509ExtendedTrustManager() {
@@ -74,14 +71,14 @@ public final class Utils {
     }
 
     public static String getFormDataAsString(Map<String, String> formData) {
-        StringBuffer buffer = new StringBuffer();
+        var buffer = new StringBuilder();
         for (Map.Entry<String, String> singleEntry : formData.entrySet()) {
             if (!buffer.isEmpty()) {
-                buffer.append("&");
+                buffer.append('&');
             }
-            buffer.append(URLEncoder.encode(singleEntry.getKey(), StandardCharsets.UTF_8));
-            buffer.append("=");
-            buffer.append(URLEncoder.encode(singleEntry.getValue(), StandardCharsets.UTF_8));
+            buffer.append(URLEncoder.encode(singleEntry.getKey(), StandardCharsets.UTF_8))
+                .append('=')
+                .append(URLEncoder.encode(singleEntry.getValue(), StandardCharsets.UTF_8));
         }
 
         return buffer.toString();
@@ -91,11 +88,17 @@ public final class Utils {
         Objects.requireNonNull(url, "url can not be null");
         Objects.requireNonNull(version, "version can not be null");
 
-        String key = url.toLowerCase(Locale.ENGLISH) + version + followRedirects + disableValidation;
+        var buffer = new StringBuilder();
+        buffer
+                .append(url.toLowerCase(Locale.ENGLISH))
+                .append(version).append(followRedirects)
+                .append(disableValidation);
 
-        HttpClient httpClient = HTTP_CLIENTS.get(key);
+        String key = buffer.toString();
+
+        var httpClient = HTTP_CLIENTS.get(key);
         if (httpClient == null) {
-            HttpClient.Builder clientBuilder = HttpClient.newBuilder();
+            var clientBuilder = HttpClient.newBuilder();
             clientBuilder.version(version);
 
             if (followRedirects) {
