@@ -17,7 +17,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 @WireMockTest(httpsEnabled = true)
-public class HttpTests {
+class HttpTests {
     private static final String RESPONSE = "hello, world!";
     public static final String REQUEST_TIMED_OUT = "request timed out";
 

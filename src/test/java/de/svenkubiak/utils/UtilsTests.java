@@ -8,7 +8,7 @@ import javax.net.ssl.SSLContext;
 import java.util.List;
 import java.util.Map;
 
-public class UtilsTests {
+class UtilsTests {
 
     @Test
     void TestIsSuccessCode() {

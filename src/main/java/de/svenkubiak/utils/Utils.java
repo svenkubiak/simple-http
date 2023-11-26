@@ -94,7 +94,7 @@ public final class Utils {
                 .append(version).append(followRedirects)
                 .append(disableValidation);
 
-        String key = buffer.toString();
+        var key = buffer.toString();
 
         var httpClient = HTTP_CLIENTS.get(key);
         if (httpClient == null) {
