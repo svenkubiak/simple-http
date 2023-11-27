@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class Utils {
-    private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(16, 0.9f, 1);
+    private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(8, 0.9f, 1);
 
     @SuppressWarnings("rawtypes")
     private static final Set SUCCESS_CODES;
@@ -54,7 +54,7 @@ public final class Utils {
         }
     };
 
-    public static SSLContext getSSLContext() {
+    private static SSLContext getSSLContext() {
         SSLContext sslContext = null;
         try {
             sslContext = SSLContext.getInstance("TLS");
@@ -84,22 +84,12 @@ public final class Utils {
         return buffer.toString();
     }
 
-    public static HttpClient getHttpClient(String url, HttpClient.Version version, boolean followRedirects, boolean disableValidation) {
-        Objects.requireNonNull(url, "url can not be null");
-        Objects.requireNonNull(version, "version can not be null");
-
-        var buffer = new StringBuilder();
-        buffer
-                .append(url.toLowerCase(Locale.ENGLISH))
-                .append(version).append(followRedirects)
-                .append(disableValidation);
-
-        var key = buffer.toString();
+    public static HttpClient getHttpClient(boolean followRedirects, boolean disableValidation) {
+        var key = String.valueOf(followRedirects) + String.valueOf(disableValidation);
 
         var httpClient = HTTP_CLIENTS.get(key);
-        if (httpClient == null) {
+        if (httpClient == null || httpClient.isTerminated()) {
             var clientBuilder = HttpClient.newBuilder();
-            clientBuilder.version(version);
 
             if (followRedirects) {
                 clientBuilder.followRedirects(HttpClient.Redirect.ALWAYS);

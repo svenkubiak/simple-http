@@ -173,13 +173,14 @@ public class Http {
     }
 
     public Result send() {
-        HttpClient httpClient = Utils.getHttpClient(url, version, followRedirects, disableValidation);
+        HttpClient httpClient = Utils.getHttpClient(followRedirects, disableValidation);
 
         Result result = new Result();
         try {
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(new URI(url))
                     .timeout(timeout)
+                    .version(version)
                     .method(method, HttpRequest.BodyPublishers.ofString(body));
 
             if (!headers.isEmpty()) {
