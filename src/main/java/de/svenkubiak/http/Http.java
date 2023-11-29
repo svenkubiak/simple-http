@@ -17,7 +17,7 @@ public class Http {
     private final Map<String, String> headers = new HashMap<>();
     private String body = "";
     private Duration timeout = Duration.of(10, SECONDS);
-    HttpClient.Version version = HttpClient.Version.HTTP_2;
+    private HttpClient.Version version = HttpClient.Version.HTTP_2;
     private boolean followRedirects;
     private boolean disableValidation;
 
@@ -87,7 +87,7 @@ public class Http {
     }
 
     /**
-     * Adds an additional header to the HTTP request
+     * Adds a header to the HTTP request
      *
      * @param key The key of the HTTP header
      * @param value The value of the HTTP header
@@ -173,7 +173,7 @@ public class Http {
     }
 
     public Result send() {
-        HttpClient httpClient = Utils.getHttpClient(followRedirects, disableValidation);
+        var httpClient = Utils.getHttpClient(followRedirects, disableValidation);
 
         Result result = new Result();
         try {
