@@ -68,3 +68,5 @@ Result result = Http
     .followRedirects()
     .send();
 ```
+
+As simple HTTP is build around the Java Http client you are able to use any of the default configuration options available. See https://docs.oracle.com/en/java/javase/21/core/java-networking.html for reference.
