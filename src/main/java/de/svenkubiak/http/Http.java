@@ -2,7 +2,9 @@ package de.svenkubiak.http;
 
 import de.svenkubiak.utils.Utils;
 
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -199,8 +201,11 @@ public class Http {
             result
                     .withBody(response.body())
                     .withStatus(response.statusCode());
-        } catch (Exception e) {
-            result.withBody(e.getMessage());
+        } catch (IOException | InterruptedException | URISyntaxException e) {
+            String message = e.getMessage();
+            if (message != null && !message.isBlank()) {
+                result.withBody(Utils.clean(message));
+            }
         }
 
         return result;

@@ -14,14 +14,14 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 public final class Utils {
     private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(8, 0.9f, 1);
     private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
-
+    private static final Pattern PATTERN = Pattern.compile("[^A-Za-z0-9]");
     @SuppressWarnings("rawtypes")
     private static final Set SUCCESS_CODES;
-
     static {
         SUCCESS_CODES = Set.of(200, 201, 202, 203, 204, 205, 206, 207, 208, 226);
     }
@@ -69,8 +69,8 @@ public final class Utils {
         return sslContext;
     }
 
-    public static boolean isSuccessCode(int statuscode) {
-        return SUCCESS_CODES.contains(statuscode);
+    public static boolean isSuccessCode(int statusCode) {
+        return SUCCESS_CODES.contains(statusCode);
     }
 
     public static String getFormDataAsString(Map<String, String> formData) {
@@ -107,5 +107,9 @@ public final class Utils {
         }
 
         return httpClient;
+    }
+
+    public static String clean(String string) {
+        return PATTERN.matcher(string).replaceAll("");
     }
 }
