@@ -12,9 +12,12 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public final class Utils {
     private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(8, 0.9f, 1);
+    private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
     @SuppressWarnings("rawtypes")
     private static final Set SUCCESS_CODES;
@@ -89,7 +92,7 @@ public final class Utils {
 
         var httpClient = HTTP_CLIENTS.get(key);
         if (httpClient == null || httpClient.isTerminated()) {
-            var clientBuilder = HttpClient.newBuilder();
+            var clientBuilder = HttpClient.newBuilder().executor(EXECUTOR);
 
             if (followRedirects) {
                 clientBuilder.followRedirects(HttpClient.Redirect.ALWAYS);
