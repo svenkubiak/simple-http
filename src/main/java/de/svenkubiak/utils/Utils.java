@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 public final class Utils {
     private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(8, 0.9f, 1);
     private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
-    private static final Pattern PATTERN = Pattern.compile("[^A-Za-z0-9]");
+    private static final Pattern PATTERN = Pattern.compile("[^A-Za-z0-9 ]");
     @SuppressWarnings("rawtypes")
     private static final Set SUCCESS_CODES;
     static {
