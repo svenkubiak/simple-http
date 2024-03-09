@@ -57,6 +57,9 @@ public final class Utils {
         }
     };
 
+    private Utils() {
+    }
+
     private static SSLContext getSSLContext() {
         SSLContext sslContext = null;
         try {

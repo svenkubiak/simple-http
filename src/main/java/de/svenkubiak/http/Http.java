@@ -177,9 +177,9 @@ public class Http {
     public Result send() {
         var httpClient = Utils.getHttpClient(followRedirects, disableValidation);
 
-        Result result = new Result();
+        var result = new Result();
         try {
-            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+            var requestBuilder = HttpRequest.newBuilder()
                     .uri(new URI(url))
                     .timeout(timeout)
                     .version(version)
