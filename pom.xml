@@ -21,7 +21,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jdk.version>21</jdk.version>
 		<maven.compiler.optimze>true</maven.compiler.optimze>
-		<slf4j.version>2.0.12</slf4j.version>
+		<slf4j.version>2.0.13</slf4j.version>
 	</properties>
 	<scm>
 		<connection>scm:git:git@github.com:svenkubiak/simple-http.git</connection>
@@ -105,7 +105,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.3.0</version>
+				<version>3.4.1</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -212,7 +212,7 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
-			<version>5.10.2</version>
+			<version>5.11.0-M1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -224,7 +224,7 @@
 		<dependency>
 			<groupId>org.wiremock</groupId>
 			<artifactId>wiremock</artifactId>
-			<version>3.5.2</version>
+			<version>3.5.4</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
@@ -258,7 +258,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
-						<version>3.2.2</version>
+						<version>3.2.4</version>
 						<executions>
 							<execution>
 								<id>sign-artifacts</id>
