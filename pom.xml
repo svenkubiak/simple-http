@@ -212,7 +212,7 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
-			<version>5.11.0-M2</version>
+			<version>5.11.0-RC1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -224,7 +224,7 @@
 		<dependency>
 			<groupId>org.wiremock</groupId>
 			<artifactId>wiremock</artifactId>
-			<version>3.8.0</version>
+			<version>3.9.1</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
