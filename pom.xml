@@ -21,7 +21,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jdk.version>21</jdk.version>
 		<maven.compiler.optimze>true</maven.compiler.optimze>
-		<slf4j.version>2.0.13</slf4j.version>
+		<slf4j.version>2.0.16</slf4j.version>
 	</properties>
 	<scm>
 		<connection>scm:git:git@github.com:svenkubiak/simple-http.git</connection>
@@ -100,7 +100,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.4.0</version>
+				<version>3.5.0</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -120,7 +120,7 @@
 			<plugin>
 				<groupId>org.owasp</groupId>
 				<artifactId>dependency-check-maven</artifactId>
-				<version>10.0.3</version>
+				<version>10.0.4</version>
 				<configuration>
 					<failBuildOnCVSS>1</failBuildOnCVSS>
 					<!--
@@ -272,7 +272,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>3.8.0</version>
+						<version>3.10.0</version>
 						<executions>
 							<execution>
 								<id>attach-javadocs</id>
