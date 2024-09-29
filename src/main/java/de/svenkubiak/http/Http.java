@@ -20,6 +20,8 @@ public class Http {
     private String body = "";
     private Duration timeout = Duration.of(10, SECONDS);
     private HttpClient.Version version = HttpClient.Version.HTTP_2;
+    private int failCount;
+    private Duration delay;
     private boolean followRedirects;
     private boolean disableValidation;
 
@@ -103,6 +105,15 @@ public class Http {
         return this;
     }
 
+    public Http withFailsafe(int failCount, Duration delay) {
+        Objects.requireNonNull(delay, "delay can not be null");
+
+        this.failCount = failCount;
+        this.delay = delay;
+
+        return this;
+    }
+
     /**
      * Sets the timeout of the request. Defaults to 10 seconds
      *
@@ -175,9 +186,13 @@ public class Http {
     }
 
     public Result send() {
-        var httpClient = Utils.getHttpClient(followRedirects, disableValidation);
-
         var result = new Result();
+        var failsafe = Utils.getFailsafe(url, failCount, delay);
+        if (failsafe != null && failsafe.isActive()) {
+            return result;
+        }
+
+        var httpClient = Utils.getHttpClient(followRedirects, disableValidation);
         try {
             var requestBuilder = HttpRequest.newBuilder()
                     .uri(new URI(url))
@@ -206,6 +221,10 @@ public class Http {
             if (message != null && !message.isBlank()) {
                 result.withBody(Utils.clean(message));
             }
+        }
+
+        if (failsafe != null) {
+            Utils.setFailsafe(url, failsafe, result);
         }
 
         return result;

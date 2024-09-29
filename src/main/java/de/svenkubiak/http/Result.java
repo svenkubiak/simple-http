@@ -69,6 +69,6 @@ public class Result {
      * @return True if the HTTP status of the request matches any of the expected status
      */
     public boolean isValid(int... expectedStatus) {
-        return Arrays.stream(expectedStatus).anyMatch(s -> s == status);
+        return Arrays.stream(expectedStatus).anyMatch(expected -> expected == status);
     }
 }

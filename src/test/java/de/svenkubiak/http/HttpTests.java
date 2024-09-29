@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import de.svenkubiak.utils.Utils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -27,7 +28,7 @@ class HttpTests {
             .build();
 
     @Test
-    void TestGet(WireMockRuntimeInfo runtime) {
+    void testGet(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(get("/").willReturn(ok().withBody(RESPONSE)));
@@ -40,7 +41,7 @@ class HttpTests {
     }
 
     @Test
-    void TestResponseHeader(WireMockRuntimeInfo runtime) {
+    void testResponseHeader(WireMockRuntimeInfo runtime) {
         //given
         String uuid = UUID.randomUUID().toString();
         WireMock wireMock = runtime.getWireMock();
@@ -55,7 +56,7 @@ class HttpTests {
     }
 
     @Test
-    void TestRequestHeader(WireMockRuntimeInfo runtime) {
+    void testRequestHeader(WireMockRuntimeInfo runtime) {
         //given
         String uuid = UUID.randomUUID().toString();
         WireMock wireMock = runtime.getWireMock();
@@ -73,7 +74,7 @@ class HttpTests {
     }
 
     @Test
-    void TestDefaultTimeout(WireMockRuntimeInfo runtime) {
+    void testDefaultTimeout(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(get("/").willReturn(ok().withBody(RESPONSE).withFixedDelay(11000)));
@@ -86,7 +87,7 @@ class HttpTests {
     }
 
     @Test
-    void TestTimeout(WireMockRuntimeInfo runtime) {
+    void testTimeout(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(get("/").willReturn(ok().withBody(RESPONSE).withFixedDelay(20000)));
@@ -99,7 +100,7 @@ class HttpTests {
     }
 
     @Test
-    void TestDisableVerification(WireMockRuntimeInfo runtime) {
+    void testDisableVerification(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(get("/").willReturn(ok().withBody(RESPONSE)));
@@ -112,7 +113,7 @@ class HttpTests {
     }
 
     @Test
-    void TestFollowRedirects(WireMockRuntimeInfo runtime) {
+    void testFollowRedirects(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(get("/redirect").willReturn(temporaryRedirect("/")));
@@ -132,7 +133,7 @@ class HttpTests {
     }
 
     @Test
-    void TestPost(WireMockRuntimeInfo runtime) {
+    void testPost(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(post("/").willReturn(ok().withBody("hello, world!")));
@@ -145,7 +146,7 @@ class HttpTests {
     }
 
     @Test
-    void TestPut(WireMockRuntimeInfo runtime) {
+    void testPut(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(put("/").willReturn(ok().withBody("hello, world!")));
@@ -158,7 +159,7 @@ class HttpTests {
     }
 
     @Test
-    void TestPatch(WireMockRuntimeInfo runtime) {
+    void testPatch(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(patch("/").willReturn(ok().withBody("hello, world!")));
@@ -171,7 +172,7 @@ class HttpTests {
     }
 
     @Test
-    void TestDelete(WireMockRuntimeInfo runtime) {
+    void testDelete(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(delete("/").willReturn(ok().withBody("hello, world!")));
@@ -181,5 +182,33 @@ class HttpTests {
 
         //then
         Assertions.assertEquals(RESPONSE, result.body());
+    }
+
+    @Test
+    void testHttpVersion(WireMockRuntimeInfo runtime) {
+        //given
+        HttpClient.Version version = HttpClient.Version.HTTP_1_1;
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-version").willReturn(ok()));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/test-version").withVersion(version).send();
+
+        //then
+        Assertions.assertTrue(result.isValid());
+    }
+
+    @Test
+    void testBody(WireMockRuntimeInfo runtime) {
+        //given
+        String body = UUID.randomUUID().toString();
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-body").willReturn(ok()));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/test-body").withBody(body).send();
+
+        //then
+        Assertions.assertTrue(result.isValid());
     }
 }
