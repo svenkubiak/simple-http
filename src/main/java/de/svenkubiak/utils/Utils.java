@@ -122,7 +122,7 @@ public final class Utils {
         return PATTERN.matcher(string).replaceAll("");
     }
 
-    public static Failsafe getFailsafe(String url, int failCount, Duration delay) {
+    public static Failsafe getFailsafe(String url, int threshold, Duration delay) {
         Objects.requireNonNull(url, "url must not be null");
 
         if (delay == null) {
@@ -131,7 +131,7 @@ public final class Utils {
 
         Failsafe failsafe = FAILSAFES.get(url);
         if (failsafe == null) {
-            failsafe = Failsafe.of(url, failCount, delay);
+            failsafe = Failsafe.of(threshold, delay);
         }
 
         return failsafe;
@@ -141,6 +141,8 @@ public final class Utils {
         Objects.requireNonNull(url, "url must not be null");
         Objects.requireNonNull(failsafe, "failsafe must not be null");
         Objects.requireNonNull(result, "result must not be null");
+
+        System.out.println("seeting failsafe");
 
         if (result.isValid()) {
             failsafe.success();

@@ -20,7 +20,7 @@ public class Http {
     private String body = "";
     private Duration timeout = Duration.of(10, SECONDS);
     private HttpClient.Version version = HttpClient.Version.HTTP_2;
-    private int failCount;
+    private int threshold;
     private Duration delay;
     private boolean followRedirects;
     private boolean disableValidation;
@@ -105,10 +105,10 @@ public class Http {
         return this;
     }
 
-    public Http withFailsafe(int failCount, Duration delay) {
+    public Http withFailsafe(int threshold, Duration delay) {
         Objects.requireNonNull(delay, "delay can not be null");
 
-        this.failCount = failCount;
+        this.threshold = threshold;
         this.delay = delay;
 
         return this;
@@ -187,7 +187,7 @@ public class Http {
 
     public Result send() {
         var result = new Result();
-        var failsafe = Utils.getFailsafe(url, failCount, delay);
+        var failsafe = Utils.getFailsafe(url, threshold, delay);
         if (failsafe != null && failsafe.isActive()) {
             return result;
         }

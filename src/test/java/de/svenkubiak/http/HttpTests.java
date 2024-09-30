@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -210,5 +211,30 @@ class HttpTests {
 
         //then
         Assertions.assertTrue(result.isValid());
+    }
+
+    @Test
+    void testWithFailsafe(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-failsafe").willReturn(badRequest()));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
+
+        //then
+        Assertions.assertEquals(result.status(), 400);
+
+        //when
+        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
+
+        //then
+        Assertions.assertEquals(result.status(), 400);
+
+        //when
+        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
+
+        //then
+        Assertions.assertEquals(result.status(), -1);
     }
 }

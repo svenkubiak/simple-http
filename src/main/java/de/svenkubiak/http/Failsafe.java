@@ -2,24 +2,21 @@ package de.svenkubiak.http;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Locale;
 import java.util.Objects;
 
 public class Failsafe {
-    private String url;
-    private int errorCount;
-    private int count;
-    private Duration timeout;
+    private final int threshold;
+    private final Duration delay;
+    private int count = 1;
     private LocalDateTime until;
 
-    public Failsafe(String url, int count, Duration timeout) {
-        this.url = Objects.requireNonNull(url, "url can not be null");
-        this.count = count;
-        this.timeout = Objects.requireNonNull(timeout, "timeout can not be null");
+    public Failsafe(int threshold, Duration delay) {
+        this.threshold = threshold;
+        this.delay = Objects.requireNonNull(delay, "delay can not be null");
     }
 
-    public static Failsafe of(String url, int count, Duration timeout) {
-        return new Failsafe(url, count, timeout);
+    public static Failsafe of(int threshold, Duration timeout) {
+        return new Failsafe(threshold, timeout);
     }
 
     public boolean isActive() {
@@ -27,15 +24,14 @@ public class Failsafe {
     }
 
     public void error() {
-        errorCount = errorCount + 1;
-
-        if (errorCount > count) {
-            until = LocalDateTime.now().plus(timeout);
+        count = count + 1;
+        if (count > threshold) {
+            until = LocalDateTime.now().plus(delay);
         }
     }
 
     public void success() {
-        errorCount = 0;
+        count = 0;
         until = null;
     }
 }
