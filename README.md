@@ -79,6 +79,6 @@ Since version 1.1.0 you can use a circuit breaker inspired failsafe. You can con
 ```
 Result result = Http
     .get("https://github.com")
-    .withFailsafe(3, Duration.of(5, ChronoUnit.MINUTES)) // After 3 non-successful request, pause for 5 minute before continuing
+    .withFailsafe(3, Duration.of(5, ChronoUnit.MINUTES)) // After 3 non-successful requests, pause for 5 minutes before continuing
     .send();
 ```
