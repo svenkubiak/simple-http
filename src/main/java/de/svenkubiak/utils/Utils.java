@@ -33,6 +33,7 @@ public final class Utils {
         SUCCESS_CODES = Set.of(200, 201, 202, 203, 204, 205, 206, 207, 208, 226);
     }
 
+    @SuppressWarnings("findsecbugs:WEAK_TRUST_MANAGER")
     private static final X509ExtendedTrustManager TRUST_MANAGER = new X509ExtendedTrustManager() {
         @Override
         public X509Certificate[] getAcceptedIssuers() {
@@ -130,7 +131,7 @@ public final class Utils {
             return null;
         }
 
-        Failsafe failsafe = FAILSAFES.get(url);
+        var failsafe = FAILSAFES.get(url);
         if (failsafe == null) {
             failsafe = Failsafe.of(threshold, delay);
         }
@@ -142,8 +143,6 @@ public final class Utils {
         Objects.requireNonNull(url, "url must not be null");
         Objects.requireNonNull(failsafe, "failsafe must not be null");
         Objects.requireNonNull(result, "result must not be null");
-
-        System.out.println("seeting failsafe");
 
         if (result.isValid()) {
             failsafe.success();

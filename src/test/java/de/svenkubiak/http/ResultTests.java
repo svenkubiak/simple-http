@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-public class ResultTests {
+class ResultTests {
     @Test
     void testWithBody() {
         //given

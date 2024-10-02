@@ -221,18 +221,18 @@ class HttpTests {
         Result result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
 
         //then
-        Assertions.assertEquals(result.status(), 400);
+        Assertions.assertEquals(400, result.status());
 
         //when
         result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
 
         //then
-        Assertions.assertEquals(result.status(), 400);
+        Assertions.assertEquals(400, result.status());
 
         //when
         result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
 
         //then
-        Assertions.assertEquals(result.status(), -1);
+        Assertions.assertEquals(-1, result.status());
     }
 }
