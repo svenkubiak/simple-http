@@ -1,10 +1,8 @@
 package de.svenkubiak.utils;
 
-import de.svenkubiak.utils.Utils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import javax.net.ssl.SSLContext;
 import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Map;

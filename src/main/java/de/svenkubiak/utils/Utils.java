@@ -2,7 +2,6 @@ package de.svenkubiak.utils;
 
 import de.svenkubiak.http.Failsafe;
 import de.svenkubiak.http.Result;
-import jdk.jfr.Frequency;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -15,7 +14,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
-import java.util.*;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;

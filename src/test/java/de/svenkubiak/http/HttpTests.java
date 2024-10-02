@@ -4,14 +4,12 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import de.svenkubiak.utils.Utils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
