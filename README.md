@@ -4,13 +4,13 @@
 Simple HTTP Java Client Library
 ================
 
-Zero-dependency HTTP client that wraps around the default Java HTTP Client that was introduced in Java 9 making HTTP requests in Java even simpler while covering probably the majority of the standard use-cases.
+Zero-dependency HTTP client that wraps around the default Java HTTP Client which was introduced in Java 9, making HTTP requests in Java even simpler while covering probably the majority of the standard use-cases.
 
 
 Requires Java 21.
 
 
-Supports GET, POST, PUT, PATCH and DELETE. Sync calls only.
+Supports GET, POST, PUT, PATCH and DELETE. Sync requests only.
 
 Usage
 ------------------
@@ -70,15 +70,15 @@ Result result = Http
     .send();
 ```
 
-As simple HTTP is build around the Java Http client you are able to use any of the default configuration options available. See https://docs.oracle.com/en/java/javase/21/core/java-networking.html for reference.
+As Simple HTTP is build around the default Java HTTP Client you are able to use any of the default configuration options available. See https://docs.oracle.com/en/java/javase/21/core/java-networking.html for reference.
 
 Failsafe
 ------------------
-Since version 1.1.0 you can use a circuit breaker inspired failsafe. You can configure that after n failed requests the HTTP client should not send any further requests until a certain time has passed.
+Since version 1.1.0 you can use a circuit breaker inspired failsafe. You can configure that after n failed requests (=all non 2xx status) the HTTP client should not send any further requests until a certain time has passed.
 
 ```
 Result result = Http
     .get("https://github.com")
-    .withFailsafe(5, Duration.of(5, ChronoUnit.SECONDS))
+    .withFailsafe(3, Duration.of(5, ChronoUnit.MINUTES)) // After 3 non-successful request, pause for 5 minute before continuing
     .send();
 ```
