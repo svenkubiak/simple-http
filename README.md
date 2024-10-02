@@ -70,3 +70,14 @@ Result result = Http
 ```
 
 As simple HTTP is build around the Java Http client you are able to use any of the default configuration options available. See https://docs.oracle.com/en/java/javase/21/core/java-networking.html for reference.
+
+Failsafe
+------------------
+Since version 1.1.0 you can use a circuit breaker inspired failsafe. You can configure that after n failed requests the HTTP client should not send any further requests until a certain time has passed.
+
+```
+Result result = Http
+    .get("https://github.com")
+    .withFailsafe(5, Duration.of(5, ChronoUnit.SECONDS))
+    .send();
+```
