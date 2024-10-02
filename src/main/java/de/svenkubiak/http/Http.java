@@ -218,7 +218,7 @@ public class Http {
             result
                     .withBody(response.body())
                     .withStatus(response.statusCode());
-        } catch (IOException | InterruptedException | URISyntaxException e) {
+        } catch (IOException | InterruptedException | URISyntaxException e) { //NOSONAR
             String message = e.getMessage();
             if (message != null && !message.isBlank()) {
                 result.withBody(Utils.clean(message));
