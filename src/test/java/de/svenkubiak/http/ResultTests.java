@@ -20,7 +20,7 @@ class ResultTests {
     @Test
     void testyIsValid() {
         //given
-        int [] expected = {200, 201};
+        int [] expected = {200, 201}; //NOSONAR
         Result result = new Result();
 
         //when

@@ -41,26 +41,32 @@ public final class Utils {
         }
 
         @Override
+        @SuppressWarnings("java:S4830")
         public void checkClientTrusted(X509Certificate[] chain, String authType) {
         }
 
         @Override
+        @SuppressWarnings("java:S4830")
         public void checkServerTrusted(X509Certificate[] chain, String authType) {
         }
 
         @Override
+        @SuppressWarnings("java:S4830")
         public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) {
         }
 
         @Override
+        @SuppressWarnings("java:S4830")
         public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) {
         }
 
         @Override
+        @SuppressWarnings("java:S4830")
         public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine) {
         }
 
         @Override
+        @SuppressWarnings("java:S4830")
         public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) {
         }
     };
