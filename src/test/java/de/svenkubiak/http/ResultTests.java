@@ -22,7 +22,7 @@ class ResultTests {
         result.withBody(body);
 
         //then
-        Assertions.assertEquals("", body);
+        Assertions.assertEquals("", result.body());
     }
 
     @Test
