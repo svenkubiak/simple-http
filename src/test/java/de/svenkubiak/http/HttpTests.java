@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -206,6 +207,20 @@ class HttpTests {
 
         //when
         Result result = Http.get(runtime.getHttpBaseUrl() + "/test-body").withBody(body).send();
+
+        //then
+        Assertions.assertTrue(result.isValid());
+    }
+
+    @Test
+    void testForm(WireMockRuntimeInfo runtime) {
+        //given
+        String body = UUID.randomUUID().toString();
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(post("/test-form").willReturn(ok()));
+
+        //when
+        Result result = Http.post(runtime.getHttpBaseUrl() + "/test-form").withForm(Map.of("foo", "bar")).send();
 
         //then
         Assertions.assertTrue(result.isValid());

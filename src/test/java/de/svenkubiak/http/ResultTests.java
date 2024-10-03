@@ -13,8 +13,27 @@ class ResultTests {
         Result result = new Result();
         result.withBody(body);
 
-        //when
+        //then
         Assertions.assertEquals(result.body(), body);
+
+        //given
+        body = null;
+        result = new Result();
+        result.withBody(body);
+
+        //then
+        Assertions.assertEquals("", body);
+    }
+
+    @Test
+    void testWithError() {
+        //given
+        String body = UUID.randomUUID().toString();
+        Result result = new Result();
+        result.withBody(body);
+
+        //when
+        Assertions.assertEquals(result.error(), body);
     }
 
     @Test

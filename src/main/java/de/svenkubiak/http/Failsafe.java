@@ -31,7 +31,15 @@ public class Failsafe {
     }
 
     public void success() {
-        count = 0;
+        count = 1;
         until = null;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public LocalDateTime getUntil() {
+        return until;
     }
 }
