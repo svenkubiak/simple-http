@@ -16,6 +16,7 @@ import java.util.UUID;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.time.temporal.ChronoUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @WireMockTest(httpsEnabled = true)
 class HttpTests {
@@ -37,7 +38,8 @@ class HttpTests {
         Result result = Http.get(runtime.getHttpBaseUrl()).send();
 
         //then
-        Assertions.assertEquals(RESPONSE, result.body());
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
     }
 
     @Test
@@ -51,8 +53,9 @@ class HttpTests {
         Result result = Http.get(runtime.getHttpBaseUrl()).send();
 
         //then
-        Assertions.assertEquals(RESPONSE, result.body());
-        Assertions.assertEquals(uuid, result.header("x-header"));
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
+        assertThat(result.header("x-header")).isEqualTo(uuid);
     }
 
     @Test
@@ -70,7 +73,8 @@ class HttpTests {
                 getRequestedFor(urlEqualTo("/"))
                         .withHeader("Authorization", equalTo(uuid))
         );
-        Assertions.assertEquals(RESPONSE, result.body());
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
     }
 
     @Test
@@ -83,7 +87,8 @@ class HttpTests {
         Result result = Http.get(runtime.getHttpBaseUrl()).send();
 
         //then
-        Assertions.assertEquals(REQUEST_TIMED_OUT, result.body());
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(REQUEST_TIMED_OUT);
     }
 
     @Test
@@ -96,7 +101,8 @@ class HttpTests {
         Result result = Http.get(runtime.getHttpBaseUrl()).withTimeout(Duration.of(14, SECONDS)).send();
 
         //then
-        Assertions.assertEquals(REQUEST_TIMED_OUT, result.body());
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(REQUEST_TIMED_OUT);
     }
 
     @Test
@@ -109,7 +115,8 @@ class HttpTests {
         Result result = Http.get(runtime.getHttpsBaseUrl()).disableValidations().send();
 
         //then
-        Assertions.assertEquals(RESPONSE, result.body());
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
     }
 
     @Test
@@ -123,13 +130,15 @@ class HttpTests {
         Result result = Http.get(runtime.getHttpBaseUrl() + "/redirect").send();
 
         //then
-        Assertions.assertEquals("", result.body());
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo("");
 
         //when
         result = Http.get(runtime.getHttpBaseUrl() + "/redirect").followRedirects().send();
 
         //then
-        Assertions.assertEquals(RESPONSE, result.body());
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
     }
 
     @Test
@@ -142,7 +151,8 @@ class HttpTests {
         Result result = Http.post(runtime.getHttpBaseUrl()).send();
 
         //then
-        Assertions.assertEquals(RESPONSE, result.body());
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
     }
 
     @Test
@@ -155,7 +165,8 @@ class HttpTests {
         Result result = Http.put(runtime.getHttpBaseUrl()).send();
 
         //then
-        Assertions.assertEquals(RESPONSE, result.body());
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
     }
 
     @Test
@@ -168,7 +179,8 @@ class HttpTests {
         Result result = Http.patch(runtime.getHttpBaseUrl()).send();
 
         //then
-        Assertions.assertEquals(RESPONSE, result.body());
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
     }
 
     @Test
@@ -181,7 +193,8 @@ class HttpTests {
         Result result = Http.delete(runtime.getHttpBaseUrl()).send();
 
         //then
-        Assertions.assertEquals(RESPONSE, result.body());
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
     }
 
     @Test
@@ -195,7 +208,8 @@ class HttpTests {
         Result result = Http.get(runtime.getHttpBaseUrl() + "/test-version").withVersion(version).send();
 
         //then
-        Assertions.assertTrue(result.isValid());
+        assertThat(result).isNotNull();
+        assertThat(result.isValid()).isTrue();
     }
 
     @Test
@@ -209,7 +223,8 @@ class HttpTests {
         Result result = Http.get(runtime.getHttpBaseUrl() + "/test-body").withBody(body).send();
 
         //then
-        Assertions.assertTrue(result.isValid());
+        assertThat(result).isNotNull();
+        assertThat(result.isValid()).isTrue();
     }
 
     @Test
@@ -223,7 +238,8 @@ class HttpTests {
         Result result = Http.post(runtime.getHttpBaseUrl() + "/test-form").withForm(Map.of("foo", "bar")).send();
 
         //then
-        Assertions.assertTrue(result.isValid());
+        assertThat(result).isNotNull();
+        assertThat(result.isValid()).isTrue();
     }
 
     @Test
@@ -236,18 +252,21 @@ class HttpTests {
         Result result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
 
         //then
-        Assertions.assertEquals(400, result.status());
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo(400);
 
         //when
         result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
 
         //then
-        Assertions.assertEquals(400, result.status());
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo(400);
 
         //when
         result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
 
         //then
-        Assertions.assertEquals(-1, result.status());
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo(-1);
     }
 }

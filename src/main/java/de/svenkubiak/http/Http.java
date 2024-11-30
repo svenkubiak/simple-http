@@ -188,7 +188,7 @@ public class Http {
     }
 
     public Result send() {
-        var result = new Result();
+        var result = Result.create();
         var failsafe = Utils.getFailsafe(url, threshold, delay);
         if (failsafe != null && failsafe.isActive()) {
             return result;

@@ -11,6 +11,12 @@ public class Result {
     private String body = "";
     private int status = -1;
 
+    private Result() {}
+
+    public static Result create() {
+        return new Result();
+    }
+
     public Result withBody(String body) {
         this.body = (body == null || body.isEmpty()) ? "" : body;
         return this;
