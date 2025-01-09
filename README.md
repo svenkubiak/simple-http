@@ -1,7 +1,8 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.svenkubiak/simple-http/badge.svg)](https://mvnrepository.com/artifact/de.svenkubiak/simple-http)
 [![Coverage](https://sonar.svenkubiak.de/badges/simple-http)](https://sonar.svenkubiak.de/badges/simple-http)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-%F0%9F%8D%BA-yellow)](https://buymeacoffee.com/svenkubiak)
 
-Simple HTTP Java Client Library
+Real Simple HTTP Java Client Library
 ================
 
 Zero-dependency HTTP client that wraps around the default Java HTTP Client which was introduced in Java 9, making HTTP requests in Java even simpler while covering probably the majority of the standard use-cases.
