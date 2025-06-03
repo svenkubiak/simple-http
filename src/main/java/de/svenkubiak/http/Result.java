@@ -9,6 +9,7 @@ import java.util.Map;
 public class Result {
     private final Map<String, String> headers = new HashMap<>();
     private String body = "";
+    private byte[] binaryBody;
     private int status = -1;
 
     private Result() {}
@@ -19,6 +20,11 @@ public class Result {
 
     public Result withBody(String body) {
         this.body = (body == null || body.isEmpty()) ? "" : body;
+        return this;
+    }
+
+    public Result withBinaryBody(byte[] binaryBody) {
+        this.binaryBody = binaryBody;
         return this;
     }
 
@@ -37,6 +43,13 @@ public class Result {
      */
     public String body() {
         return body;
+    }
+
+    /**
+     * @return The binaryBody of the HTTP response
+     */
+    public byte[] binaryBody() {
+        return binaryBody;
     }
 
     /**

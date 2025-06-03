@@ -26,6 +26,7 @@ public class Http {
     private Duration delay;
     private boolean followRedirects;
     private boolean disableValidation;
+    private boolean binaryResponse;
 
     private Http(String url, String method) {
         this.url = Objects.requireNonNull(url, "url can not be null");
@@ -107,6 +108,14 @@ public class Http {
         return this;
     }
 
+    /**
+     * Adds a failsafe to the request. After the threshold has been reached
+     * any following request will be delayed by the given delay
+     *
+     * @param threshold The threshold for the failsafe
+     * @param delay The delay until the next request
+     * @return The Http instance
+     */
     public Http withFailsafe(int threshold, Duration delay) {
         Objects.requireNonNull(delay, "delay can not be null");
 
@@ -172,6 +181,16 @@ public class Http {
     }
 
     /**
+     * Enables binary response so that the content
+     * response can be handled accordingly (e.g. download)
+     * @return The Http instance
+     */
+    public Http binaryResponse() {
+        this.binaryResponse = true;
+        return this;
+    }
+
+    /**
      * Disables all HTTPS certificate validation
      * @return The Http instance
      */
@@ -206,18 +225,33 @@ public class Http {
                 headers.forEach(requestBuilder::header);
             }
 
-            HttpResponse<String> response = httpClient.send(
-                    requestBuilder.build(),
-                    HttpResponse.BodyHandlers.ofString());
+            if (binaryResponse) {
+                HttpResponse<byte []> response = httpClient.send(
+                        requestBuilder.build(),
+                        HttpResponse.BodyHandlers.ofByteArray());
 
-            response
-                    .headers()
-                    .map()
-                    .forEach((key, value) -> result.withHeader(key, value.getFirst()));
+                response
+                        .headers()
+                        .map()
+                        .forEach((key, value) -> result.withHeader(key, value.getFirst()));
 
-            result
-                    .withBody(response.body())
-                    .withStatus(response.statusCode());
+                result
+                        .withBinaryBody(response.body())
+                        .withStatus(response.statusCode());
+            } else {
+                HttpResponse<String> response = httpClient.send(
+                        requestBuilder.build(),
+                        HttpResponse.BodyHandlers.ofString());
+
+                response
+                        .headers()
+                        .map()
+                        .forEach((key, value) -> result.withHeader(key, value.getFirst()));
+
+                result
+                        .withBody(response.body())
+                        .withStatus(response.statusCode());
+            }
         } catch (IOException | InterruptedException | URISyntaxException e) { //NOSONAR
             String message = e.getMessage();
             if (message != null && !message.isBlank()) {
