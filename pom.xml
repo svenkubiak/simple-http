@@ -55,7 +55,7 @@
 			<plugin>
 				<groupId>org.pitest</groupId>
 				<artifactId>pitest-maven</artifactId>
-				<version>1.20.4</version>
+				<version>1.20.5</version>
 				<dependencies>
 					<dependency>
 						<groupId>org.pitest</groupId>
@@ -200,7 +200,7 @@
 					<dependency>
 						<groupId>org.codehaus.mojo</groupId>
 						<artifactId>extra-enforcer-rules</artifactId>
-						<version>1.10.0</version>
+						<version>1.11.0</version>
 					</dependency>
 				</dependencies>
 			</plugin>
