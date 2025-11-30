@@ -8,8 +8,9 @@ Real Simple HTTP Java Client Library
 Zero-dependency HTTP client that wraps around the default Java HTTP Client which was introduced in Java 9, making HTTP requests in Java even simpler while covering probably the majority of the standard use-cases.
 
 
-Requires Java 21.
+1.x requires Java 21.
 
+2.x requires Java 25.
 
 Supports GET, POST, PUT, PATCH and DELETE. Sync requests only.
 
