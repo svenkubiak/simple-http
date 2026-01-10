@@ -16,9 +16,9 @@ import java.util.Objects;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class Http {
-    private final String url;
     private final String method;
     private final Map<String, String> headers = new HashMap<>();
+    private String url;
     private String body = "";
     private Duration timeout = Duration.of(10, SECONDS);
     private HttpClient.Version version = HttpClient.Version.HTTP_2;
@@ -91,6 +91,18 @@ public class Http {
      */
     public static Http delete(String url) {
         return new Http(url, "DELETE");
+    }
+
+    /**
+     * Adds the url to call changing the initial value
+     *
+     * @param url The url to call
+     * @return The Http instance
+     */
+    public Http withUrl(String url) {
+        Objects.requireNonNull(url, "url can not be null");
+        this.url = url;
+        return this;
     }
 
     /**
