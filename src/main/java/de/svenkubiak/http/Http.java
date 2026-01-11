@@ -216,8 +216,7 @@ public class Http {
 
     public Result send() {
         var result = Result.create();
-        var failsafe = Utils.getFailsafe(url);
-        if (failsafe != null && failsafe.isActive()) {
+        if (Utils.activeFailsafe(url)) {
             return result;
         }
 

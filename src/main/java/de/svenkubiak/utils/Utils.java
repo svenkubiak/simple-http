@@ -137,7 +137,7 @@ public final class Utils {
         FAIL_SAFES.put(url, failsafe);
     }
 
-    public static Failsafe getFailsafe(String url) {
+    private static Failsafe getFailsafe(String url) {
         Objects.requireNonNull(url, URL_MUST_NOT_BE_NULL);
 
         return FAIL_SAFES.get(url);
@@ -157,5 +157,11 @@ public final class Utils {
 
             FAIL_SAFES.put(url, failsafe);
         }
+    }
+
+    public static boolean activeFailsafe(String url) {
+        var failsafe = Utils.getFailsafe(url);
+
+        return failsafe != null && failsafe.isActive();
     }
 }
