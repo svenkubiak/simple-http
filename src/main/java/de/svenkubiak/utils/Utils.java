@@ -26,6 +26,7 @@ public final class Utils {
     private static final Map<String, Failsafe> FAIL_SAFES = new ConcurrentHashMap<>(200, 0.9f, 1);
     private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
     private static final Pattern PATTERN = Pattern.compile("[^A-Za-z0-9 ]");
+    private static final String URL_MUST_NOT_BE_NULL = "url must not be null";
     @SuppressWarnings("rawtypes")
     private static final Set SUCCESS_CODES;
     @SuppressWarnings("findsecbugs:WEAK_TRUST_MANAGER")
@@ -130,23 +131,23 @@ public final class Utils {
     }
 
     public static void addFailsafe(String url, Failsafe failsafe) {
-        Objects.requireNonNull(url, "url must not be null");
+        Objects.requireNonNull(url, URL_MUST_NOT_BE_NULL);
         Objects.requireNonNull(failsafe, "failsafe must not be null");
 
         FAIL_SAFES.put(url, failsafe);
     }
 
     public static Failsafe getFailsafe(String url) {
-        Objects.requireNonNull(url, "url must not be null");
+        Objects.requireNonNull(url, URL_MUST_NOT_BE_NULL);
 
         return FAIL_SAFES.get(url);
     }
 
     public static void setFailsafe(String url, Result result) {
-        Objects.requireNonNull(url, "url must not be null");
+        Objects.requireNonNull(url, URL_MUST_NOT_BE_NULL);
         Objects.requireNonNull(result, "result must not be null");
 
-        Failsafe failsafe = getFailsafe(url);
+        var failsafe = getFailsafe(url);
         if (failsafe != null) {
             if (result.isValid()) {
                 failsafe.success();

@@ -267,9 +267,7 @@ public class Http {
             }
         }
 
-        if (failsafe != null) {
-            Utils.setFailsafe(url, result);
-        }
+        Utils.setFailsafe(url, result);
 
         return result;
     }
