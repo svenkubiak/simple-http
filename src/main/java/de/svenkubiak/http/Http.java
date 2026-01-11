@@ -217,6 +217,7 @@ public class Http {
     public Result send() {
         var result = Result.create();
         if (Utils.activeFailsafe(url)) {
+            result.withStatus(0);
             return result;
         }
 
