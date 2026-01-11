@@ -24,10 +24,14 @@ import java.util.regex.Pattern;
 
 public final class Utils {
     private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(8, 0.9f, 1);
-    private static final Map<String, Failsafe> FAIL_SAFES = new ConcurrentHashMap<>(8, 0.9f, 1);
+    private static final Map<String, Failsafe> FAILSAFES = new ConcurrentHashMap<>(8, 0.9f, 1);
     private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
     private static final Pattern PATTERN = Pattern.compile("[^A-Za-z0-9 ]");
-    private static final Set<Integer> SUCCESS_CODES;
+    @SuppressWarnings("rawtypes")
+    private static final Set SUCCESS_CODES;
+    static {
+        SUCCESS_CODES = Set.of(200, 201, 202, 203, 204, 205, 206, 207, 208, 226);
+    }
 
     @SuppressWarnings("findsecbugs:WEAK_TRUST_MANAGER")
     private static final X509ExtendedTrustManager TRUST_MANAGER = new X509ExtendedTrustManager() {
@@ -67,10 +71,6 @@ public final class Utils {
         }
     };
 
-    static {
-        SUCCESS_CODES = Set.of(200, 201, 202, 203, 204, 205, 206, 207, 208, 226);
-    }
-
     private Utils() {
     }
 
@@ -91,8 +91,6 @@ public final class Utils {
     }
 
     public static String getFormDataAsString(Map<String, String> formData) {
-        Objects.requireNonNull(formData, "formData can not be null");
-
         var buffer = new StringBuilder();
         for (Map.Entry<String, String> singleEntry : formData.entrySet()) {
             if (!buffer.isEmpty()) {
@@ -134,9 +132,12 @@ public final class Utils {
 
     public static Failsafe getFailsafe(String url, int threshold, Duration delay) {
         Objects.requireNonNull(url, "url must not be null");
-        Objects.requireNonNull(delay, "delay must not be null");
 
-        var failsafe = FAIL_SAFES.get(url);
+        if (delay == null) {
+            return null;
+        }
+
+        var failsafe = FAILSAFES.get(url);
         if (failsafe == null) {
             failsafe = Failsafe.of(threshold, delay);
         }
@@ -155,6 +156,6 @@ public final class Utils {
             failsafe.error();
         }
 
-        FAIL_SAFES.put(url, failsafe);
+        FAILSAFES.put(url, failsafe);
     }
 }
