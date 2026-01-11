@@ -19,8 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @WireMockTest(httpsEnabled = true)
 class HttpTests {
-    public static final String REQUEST_TIMED_OUT = "request timed out";
+    private static final String REQUEST_TIMED_OUT = "request timed out";
     private static final String RESPONSE = "hello, world!";
+
     @RegisterExtension
     static WireMockExtension wm1 = WireMockExtension.newInstance()
             .options(wireMockConfig().bindAddress("127.0.0.1").port(10256).httpsPort(10257))
@@ -228,7 +229,6 @@ class HttpTests {
     @Test
     void testForm(WireMockRuntimeInfo runtime) {
         //given
-        String body = UUID.randomUUID().toString();
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(post("/test-form").willReturn(ok()));
 
@@ -265,6 +265,120 @@ class HttpTests {
 
         //then
         assertThat(result).isNotNull();
-        assertThat(result.status()).isEqualTo(-1);
+        assertThat(result.status()).isEqualTo(0);
+    }
+
+    @Test
+    void testBinaryResponse(WireMockRuntimeInfo runtime) {
+        //given
+        byte[] binaryData = new byte[]{0x48, 0x65, 0x6C, 0x6C, 0x6F}; // "Hello" in bytes
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-binary").willReturn(ok().withBody(binaryData)));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/test-binary").binaryResponse().send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.binaryBody()).isNotNull();
+        assertThat(result.binaryBody()).isEqualTo(binaryData);
+        assertThat(result.status()).isEqualTo(200);
+    }
+
+    @Test
+    void testPostWithBody(WireMockRuntimeInfo runtime) {
+        //given
+        String requestBody = "{\"name\":\"test\",\"value\":123}";
+        String responseBody = "{\"status\":\"success\"}";
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(post("/test-post-body")
+                .withRequestBody(equalTo(requestBody))
+                .willReturn(ok().withBody(responseBody)));
+
+        //when
+        Result result = Http.post(runtime.getHttpBaseUrl() + "/test-post-body")
+                .withBody(requestBody)
+                .withHeader("Content-Type", "application/json")
+                .send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(responseBody);
+        assertThat(result.status()).isEqualTo(200);
+        assertThat(result.isValid()).isTrue();
+    }
+
+    @Test
+    void testMultipleHeaders(WireMockRuntimeInfo runtime) {
+        //given
+        String authToken = UUID.randomUUID().toString();
+        String userAgent = "TestClient/1.0";
+        String contentType = "application/json";
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-multiple-headers").willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/test-multiple-headers")
+                .withHeader("Authorization", "Bearer " + authToken)
+                .withHeader("User-Agent", userAgent)
+                .withHeader("Content-Type", contentType)
+                .send();
+
+        //then
+        verify(
+                getRequestedFor(urlEqualTo("/test-multiple-headers"))
+                        .withHeader("Authorization", equalTo("Bearer " + authToken))
+                        .withHeader("User-Agent", equalTo(userAgent))
+                        .withHeader("Content-Type", equalTo(contentType))
+        );
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
+        assertThat(result.isValid()).isTrue();
+    }
+
+    @Test
+    void testWithUrl(WireMockRuntimeInfo runtime) {
+        //given
+        String initialUrl = runtime.getHttpBaseUrl() + "/initial";
+        String newUrl = runtime.getHttpBaseUrl() + "/new";
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/initial").willReturn(notFound()));
+        wireMock.register(get("/new").willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Result result = Http.get(initialUrl).withUrl(newUrl).send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
+        assertThat(result.status()).isEqualTo(200);
+        assertThat(result.isValid()).isTrue();
+    }
+
+    @Test
+    void testStatusCodes(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-200").willReturn(ok()));
+        wireMock.register(get("/test-404").willReturn(notFound()));
+        wireMock.register(get("/test-500").willReturn(serverError()));
+
+        //when
+        Result result200 = Http.get(runtime.getHttpBaseUrl() + "/test-200").send();
+        Result result404 = Http.get(runtime.getHttpBaseUrl() + "/test-404").send();
+        Result result500 = Http.get(runtime.getHttpBaseUrl() + "/test-500").send();
+
+        //then
+        assertThat(result200).isNotNull();
+        assertThat(result200.status()).isEqualTo(200);
+        assertThat(result200.isValid()).isTrue();
+
+        assertThat(result404).isNotNull();
+        assertThat(result404.status()).isEqualTo(404);
+        assertThat(result404.isValid()).isFalse();
+
+        assertThat(result500).isNotNull();
+        assertThat(result500.status()).isEqualTo(500);
+        assertThat(result500.isValid()).isFalse();
     }
 }
