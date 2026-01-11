@@ -2,7 +2,6 @@ package de.svenkubiak.utils;
 
 import de.svenkubiak.http.Failsafe;
 import de.svenkubiak.http.Result;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpClient;
@@ -62,7 +61,7 @@ class UtilsTests {
         Result result = Result.create().withStatus(200);
 
         //when
-        Utils.setFailsafe(url, failsafe, result);
+        Utils.setFailsafe(url, result);
 
         //then
         assertThat(result).isNotNull();

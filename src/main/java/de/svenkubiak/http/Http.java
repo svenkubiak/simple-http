@@ -22,8 +22,6 @@ public class Http {
     private String body = "";
     private Duration timeout = Duration.of(10, SECONDS);
     private HttpClient.Version version = HttpClient.Version.HTTP_2;
-    private int threshold;
-    private Duration delay;
     private boolean followRedirects;
     private boolean disableValidation;
     private boolean binaryResponse;
@@ -130,9 +128,7 @@ public class Http {
      */
     public Http withFailsafe(int threshold, Duration delay) {
         Objects.requireNonNull(delay, "delay can not be null");
-
-        this.threshold = threshold;
-        this.delay = delay;
+        Utils.addFailsafe(url, Failsafe.of(threshold, delay));
 
         return this;
     }
@@ -220,7 +216,7 @@ public class Http {
 
     public Result send() {
         var result = Result.create();
-        var failsafe = Utils.getFailsafe(url, threshold, delay);
+        var failsafe = Utils.getFailsafe(url);
         if (failsafe != null && failsafe.isActive()) {
             return result;
         }
@@ -272,7 +268,7 @@ public class Http {
         }
 
         if (failsafe != null) {
-            Utils.setFailsafe(url, failsafe, result);
+            Utils.setFailsafe(url, result);
         }
 
         return result;

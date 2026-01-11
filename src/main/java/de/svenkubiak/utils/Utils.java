@@ -13,7 +13,6 @@ import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -24,15 +23,11 @@ import java.util.regex.Pattern;
 
 public final class Utils {
     private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(8, 0.9f, 1);
-    private static final Map<String, Failsafe> FAILSAFES = new ConcurrentHashMap<>(8, 0.9f, 1);
+    private static final Map<String, Failsafe> FAIL_SAFES = new ConcurrentHashMap<>(200, 0.9f, 1);
     private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
     private static final Pattern PATTERN = Pattern.compile("[^A-Za-z0-9 ]");
     @SuppressWarnings("rawtypes")
     private static final Set SUCCESS_CODES;
-    static {
-        SUCCESS_CODES = Set.of(200, 201, 202, 203, 204, 205, 206, 207, 208, 226);
-    }
-
     @SuppressWarnings("findsecbugs:WEAK_TRUST_MANAGER")
     private static final X509ExtendedTrustManager TRUST_MANAGER = new X509ExtendedTrustManager() {
         @Override
@@ -70,6 +65,10 @@ public final class Utils {
         public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) {
         }
     };
+
+    static {
+        SUCCESS_CODES = Set.of(200, 201, 202, 203, 204, 205, 206, 207, 208, 226);
+    }
 
     private Utils() {
     }
@@ -130,32 +129,32 @@ public final class Utils {
         return PATTERN.matcher(string).replaceAll("");
     }
 
-    public static Failsafe getFailsafe(String url, int threshold, Duration delay) {
-        Objects.requireNonNull(url, "url must not be null");
-
-        if (delay == null) {
-            return null;
-        }
-
-        var failsafe = FAILSAFES.get(url);
-        if (failsafe == null) {
-            failsafe = Failsafe.of(threshold, delay);
-        }
-
-        return failsafe;
-    }
-
-    public static void setFailsafe(String url, Failsafe failsafe, Result result) {
+    public static void addFailsafe(String url, Failsafe failsafe) {
         Objects.requireNonNull(url, "url must not be null");
         Objects.requireNonNull(failsafe, "failsafe must not be null");
+
+        FAIL_SAFES.put(url, failsafe);
+    }
+
+    public static Failsafe getFailsafe(String url) {
+        Objects.requireNonNull(url, "url must not be null");
+
+        return FAIL_SAFES.get(url);
+    }
+
+    public static void setFailsafe(String url, Result result) {
+        Objects.requireNonNull(url, "url must not be null");
         Objects.requireNonNull(result, "result must not be null");
 
-        if (result.isValid()) {
-            failsafe.success();
-        } else {
-            failsafe.error();
-        }
+        Failsafe failsafe = getFailsafe(url);
+        if (failsafe != null) {
+            if (result.isValid()) {
+                failsafe.success();
+            } else {
+                failsafe.error();
+            }
 
-        FAILSAFES.put(url, failsafe);
+            FAIL_SAFES.put(url, failsafe);
+        }
     }
 }

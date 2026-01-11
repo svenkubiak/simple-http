@@ -4,7 +4,6 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,9 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @WireMockTest(httpsEnabled = true)
 class HttpTests {
-    private static final String RESPONSE = "hello, world!";
     public static final String REQUEST_TIMED_OUT = "request timed out";
-
+    private static final String RESPONSE = "hello, world!";
     @RegisterExtension
     static WireMockExtension wm1 = WireMockExtension.newInstance()
             .options(wireMockConfig().bindAddress("127.0.0.1").port(10256).httpsPort(10257))
@@ -256,14 +254,14 @@ class HttpTests {
         assertThat(result.status()).isEqualTo(400);
 
         //when
-        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
+        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").send();
 
         //then
         assertThat(result).isNotNull();
         assertThat(result.status()).isEqualTo(400);
 
         //when
-        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
+        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").send();
 
         //then
         assertThat(result).isNotNull();
