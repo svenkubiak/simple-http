@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
+# Check git state ONCE, at script start
 check_clean_git() {
   if ! git diff-index --quiet HEAD --; then
     echo "There are uncommitted changes in the repository. Please commit or stash them before running this script."
@@ -8,11 +9,12 @@ check_clean_git() {
   fi
 }
 
-# Official SemVer 2.0.0 regex with numbered capture groups, adapted for bash [[ ]] [page:0]
+# Official SemVer 2.0.0 regex, single line, bash-friendly
 SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
 
-# 1) Initial build
 check_clean_git
+
+# 1) Initial build
 mvn clean verify
 
 # 2) Get current version and prompt for new version
@@ -25,8 +27,7 @@ if [[ ! "$NEW_VERSION" =~ $SEMVER_REGEX ]]; then
   exit 1
 fi
 
-# 4) Set version
-check_clean_git
+# 4) Set version (this will make the repo dirty, which is OK now)
 mvn versions:set -DnewVersion="$NEW_VERSION"
 STATUS=$?
 
@@ -36,7 +37,6 @@ if [ $STATUS -ne 0 ]; then
   echo "Failed to set new version!"
 else
   # 5) Release build
-  check_clean_git
   mvn clean deploy -Prelease
   STATUS=$?
   if [ $STATUS -ne 0 ]; then
