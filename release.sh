@@ -8,7 +8,7 @@ check_clean_git() {
   fi
 }
 
-# Official SemVer 2.0.0 regex (numbered groups), adapted for bash [[ ]] [page:0]
+# Official SemVer 2.0.0 regex with numbered capture groups, adapted for bash [[ ]] [page:0]
 SEMVER_REGEX='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)'\
 '(?:-((?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\.'\
 '(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?'\
