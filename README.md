@@ -7,7 +7,6 @@ Real Simple HTTP Java Client Library
 
 Zero-dependency HTTP client that wraps around the default Java HTTP Client which was introduced in Java 9, making HTTP requests in Java even simpler while covering probably the majority of the standard use-cases.
 
-
 1.x requires Java 21.
 
 2.x requires Java 25.
@@ -33,7 +32,7 @@ Examples
 HTTP GET call
 
 ```
-Result result = Http.get("https://github.com").send();
+var result = Http.get("https://github.com").send();
 
 if (result.isValid()) {
     System.out.println(result.body());
@@ -42,10 +41,10 @@ if (result.isValid()) {
 }
 ```
 
-Form post
+HTTP Form POST
 
 ```
-Result result = Http
+var result = Http
     .post("https://mydomain.com")
     .withForm(Map.of("username", "foo", "password", "bar"))
     .send();
@@ -55,7 +54,7 @@ Sending JSON with additional header
 
 ```
 String json = ...
-Result result = Http
+var result = Http
     .post("https://mydomain.com")
     .withHeader("Content-Type", "application/json")
     .withBody(json)
@@ -65,7 +64,7 @@ Result result = Http
 GET request without HTTP certificate validation and following redirects
 
 ```
-Result result = Http
+var result = Http
     .get("https://mydomain.com")
     .disableValidations()
     .followRedirects()
@@ -79,7 +78,7 @@ Failsafe
 Since version 1.1.0 you can use a circuit breaker inspired failsafe. You can configure that after n failed requests (=all non 2xx status) the HTTP client should not send any further requests until a certain time has passed.
 
 ```
-Result result = Http
+var result = Http
     .get("https://github.com")
     .withFailsafe(3, Duration.of(5, ChronoUnit.MINUTES)) // After 3 non-successful requests, pause for 5 minutes before continuing
     .send();
