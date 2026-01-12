@@ -164,4 +164,8 @@ public final class Utils {
 
         return failsafe != null && failsafe.isActive();
     }
+
+    public static void shutdown() {
+        HTTP_CLIENTS.values().forEach(HttpClient::shutdownNow);
+    }
 }

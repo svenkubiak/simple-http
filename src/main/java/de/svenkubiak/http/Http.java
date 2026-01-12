@@ -92,6 +92,13 @@ public class Http {
     }
 
     /**
+     * Closes and shuts down all Http Clients
+     */
+    public static void shutdown() {
+        Utils.shutdown();
+    }
+
+    /**
      * Adds the url to call changing the initial value
      *
      * @param url The url to call
