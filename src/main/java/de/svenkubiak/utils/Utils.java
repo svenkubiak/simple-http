@@ -7,6 +7,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -104,8 +105,12 @@ public final class Utils {
         return buffer.toString();
     }
 
-    public static HttpClient getHttpClient(boolean followRedirects, boolean disableValidation) {
+    public static HttpClient getHttpClient(boolean followRedirects, boolean disableValidation, InetSocketAddress proxy) {
         var key = String.valueOf(followRedirects) + String.valueOf(disableValidation);
+
+        if (proxy != null) {
+            key = key + proxy.getHostString() + ":" + proxy.getPort();
+        }
 
         var httpClient = HTTP_CLIENTS.get(key);
         if (httpClient == null || httpClient.isTerminated()) {

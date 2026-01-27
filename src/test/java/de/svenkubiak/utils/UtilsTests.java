@@ -46,7 +46,7 @@ class UtilsTests {
         HttpClient client;
 
         //then
-        client = Utils.getHttpClient(true, true);
+        client = Utils.getHttpClient(true, true, null);
 
         //then
         assertThat(client).isNotNull();
@@ -208,10 +208,10 @@ class UtilsTests {
         boolean disableValidation4 = true;
 
         //when
-        HttpClient client1 = Utils.getHttpClient(followRedirects1, disableValidation1);
-        HttpClient client2 = Utils.getHttpClient(followRedirects2, disableValidation2);
-        HttpClient client3 = Utils.getHttpClient(followRedirects3, disableValidation3);
-        HttpClient client4 = Utils.getHttpClient(followRedirects4, disableValidation4);
+        HttpClient client1 = Utils.getHttpClient(followRedirects1, disableValidation1, null);
+        HttpClient client2 = Utils.getHttpClient(followRedirects2, disableValidation2, null);
+        HttpClient client3 = Utils.getHttpClient(followRedirects3, disableValidation3, null);
+        HttpClient client4 = Utils.getHttpClient(followRedirects4, disableValidation4, null);
 
         //then
         assertThat(client1).isNotNull();
@@ -231,8 +231,8 @@ class UtilsTests {
         boolean disableValidation = false;
 
         //when
-        HttpClient client1 = Utils.getHttpClient(followRedirects, disableValidation);
-        HttpClient client2 = Utils.getHttpClient(followRedirects, disableValidation);
+        HttpClient client1 = Utils.getHttpClient(followRedirects, disableValidation, null);
+        HttpClient client2 = Utils.getHttpClient(followRedirects, disableValidation, null);
 
         //then
         assertThat(client1).isNotNull();

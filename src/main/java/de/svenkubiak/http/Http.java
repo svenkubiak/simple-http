@@ -3,6 +3,7 @@ package de.svenkubiak.http;
 import de.svenkubiak.utils.Utils;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -22,6 +23,7 @@ public class Http {
     private String body = "";
     private Duration timeout = Duration.of(10, SECONDS);
     private HttpClient.Version version = HttpClient.Version.HTTP_2;
+    private InetSocketAddress proxy;
     private boolean followRedirects;
     private boolean disableValidation;
     private boolean binaryResponse;
@@ -122,6 +124,21 @@ public class Http {
         Objects.requireNonNull(value, "value can not be null");
 
         headers.put(key, value);
+        return this;
+    }
+
+    /**
+     * Adds a proxy to the HttpClient. Each request is the run through
+     * the defined proxy when the HTTP request is executed
+     *
+     * @param host The hostname of the proxy
+     * @param port The port of the proxy
+     * @return The Http instance
+     */
+    public Http withProxy(String host, int port) {
+        Objects.requireNonNull(host, "host can not be null");
+        this.proxy = new InetSocketAddress(host, port);
+
         return this;
     }
 
@@ -228,7 +245,7 @@ public class Http {
             return result;
         }
 
-        var httpClient = Utils.getHttpClient(followRedirects, disableValidation);
+        var httpClient = Utils.getHttpClient(followRedirects, disableValidation, proxy);
         try {
             var requestBuilder = HttpRequest.newBuilder()
                     .uri(new URI(url))
