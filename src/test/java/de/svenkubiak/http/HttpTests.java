@@ -111,7 +111,7 @@ class HttpTests {
         wireMock.register(get("/").willReturn(ok().withBody(RESPONSE)));
 
         //when
-        Result result = Http.get(runtime.getHttpsBaseUrl()).disableValidations().send();
+        Result result = Http.get(runtime.getHttpsBaseUrl()).disableAllHttpsValidations().send();
 
         //then
         assertThat(result).isNotNull();

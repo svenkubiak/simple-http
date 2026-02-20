@@ -223,10 +223,12 @@ public class Http {
     }
 
     /**
-     * Disables all HTTPS certificate validation
+     * Disables all HTTPS certificate and hostname validation.
+     * Do not use in production; enables MITM attacks.
+     *
      * @return The Http instance
      */
-    public Http disableValidations() {
+    public Http disableAllHttpsValidations() {
         this.disableValidation = true;
         return this;
     }

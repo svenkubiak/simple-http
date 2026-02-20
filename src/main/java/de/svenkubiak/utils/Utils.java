@@ -117,7 +117,7 @@ public final class Utils {
             var clientBuilder = HttpClient.newBuilder().executor(EXECUTOR);
 
             if (followRedirects) {
-                clientBuilder.followRedirects(HttpClient.Redirect.ALWAYS);
+                clientBuilder.followRedirects(HttpClient.Redirect.NORMAL);
             }
 
             if (disableValidation) {
