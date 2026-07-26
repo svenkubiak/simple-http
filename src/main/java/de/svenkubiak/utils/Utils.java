@@ -8,6 +8,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 import java.net.InetSocketAddress;
+import java.net.ProxySelector;
 import java.net.Socket;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -122,6 +123,10 @@ public final class Utils {
 
             if (disableValidation) {
                 clientBuilder.sslContext(Utils.getSSLContext());
+            }
+
+            if (proxy != null) {
+                clientBuilder.proxy(ProxySelector.of(proxy));
             }
 
             httpClient = clientBuilder.build();

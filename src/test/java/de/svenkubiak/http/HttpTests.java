@@ -356,6 +356,76 @@ class HttpTests {
     }
 
     @Test
+    void testWithProxy(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/proxied").willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Result result = Http.get("http://127.0.0.1:" + runtime.getHttpPort() + "/proxied")
+                .withProxy("127.0.0.1", runtime.getHttpPort())
+                .send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
+        assertThat(result.status()).isEqualTo(200);
+    }
+
+    @Test
+    void testMaxResponseSizeWithinLimit(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/limited").willReturn(ok().withBody("hello")));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/limited")
+                .withMaxResponseSize(10)
+                .send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo("hello");
+        assertThat(result.status()).isEqualTo(200);
+    }
+
+    @Test
+    void testMaxResponseSizeExceeded(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/too-large").willReturn(ok().withBody("hello, world!")));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/too-large")
+                .withMaxResponseSize(5)
+                .send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo(-1);
+        assertThat(result.body()).contains("exceeds maximum size");
+    }
+
+    @Test
+    void testMaxResponseSizeBinaryExceeded(WireMockRuntimeInfo runtime) {
+        //given
+        byte[] binaryData = new byte[]{0x48, 0x65, 0x6C, 0x6C, 0x6F};
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/binary-limited").willReturn(ok().withBody(binaryData)));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/binary-limited")
+                .binaryResponse()
+                .withMaxResponseSize(3)
+                .send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.status()).isEqualTo(-1);
+        assertThat(result.body()).contains("exceeds maximum size");
+    }
+
+    @Test
     void testStatusCodes(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();

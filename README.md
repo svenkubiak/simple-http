@@ -67,7 +67,7 @@ GET request without HTTP certificate validation and following redirects
 ```
 var result = Http
     .get("https://mydomain.com")
-    .disableValidations()
+    .disableAllHttpsValidations()
     .followRedirects()
     .send();
 ```

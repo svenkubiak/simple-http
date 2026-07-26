@@ -3,12 +3,14 @@ package de.svenkubiak.http;
 import de.svenkubiak.utils.Utils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +19,9 @@ import java.util.Objects;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class Http {
+    /** Default maximum response body size: 64 MiB. */
+    public static final long DEFAULT_MAX_RESPONSE_SIZE = 64L * 1024 * 1024;
+
     private final String method;
     private final Map<String, String> headers = new HashMap<>();
     private String url;
@@ -27,6 +32,7 @@ public class Http {
     private boolean followRedirects;
     private boolean disableValidation;
     private boolean binaryResponse;
+    private long maxResponseSize = DEFAULT_MAX_RESPONSE_SIZE;
 
     private Http(String url, String method) {
         this.url = Objects.requireNonNull(url, "url can not be null");
@@ -233,6 +239,22 @@ public class Http {
         return this;
     }
 
+    /**
+     * Sets the maximum allowed response body size in bytes.
+     * Requests exceeding this limit fail with an error result.
+     * Defaults to {@value #DEFAULT_MAX_RESPONSE_SIZE} bytes (64 MiB).
+     *
+     * @param maxBytes Maximum response size in bytes; 0 means unlimited
+     * @return The Http instance
+     */
+    public Http withMaxResponseSize(long maxBytes) {
+        if (maxBytes < 0) {
+            throw new IllegalArgumentException("maxBytes must not be negative");
+        }
+        this.maxResponseSize = maxBytes;
+        return this;
+    }
+
     private void setBody(String body) {
         Objects.requireNonNull(body, "body can not be null");
         if (this.body == null || this.body.isEmpty()) {
@@ -259,7 +281,26 @@ public class Http {
                 headers.forEach(requestBuilder::header);
             }
 
-            if (binaryResponse) {
+            if (maxResponseSize > 0) {
+                HttpResponse<InputStream> response = httpClient.send(
+                        requestBuilder.build(),
+                        HttpResponse.BodyHandlers.ofInputStream());
+
+                response
+                        .headers()
+                        .map()
+                        .forEach((key, value) -> result.withHeader(key, value.getFirst()));
+
+                try (InputStream inputStream = response.body()) {
+                    byte[] data = readLimited(inputStream, maxResponseSize);
+                    result.withStatus(response.statusCode());
+                    if (binaryResponse) {
+                        result.withBinaryBody(data);
+                    } else {
+                        result.withBody(new String(data, StandardCharsets.UTF_8));
+                    }
+                }
+            } else if (binaryResponse) {
                 HttpResponse<byte []> response = httpClient.send(
                         requestBuilder.build(),
                         HttpResponse.BodyHandlers.ofByteArray());
@@ -296,5 +337,20 @@ public class Http {
         Utils.setFailsafe(url, result);
 
         return result;
+    }
+
+    private static byte[] readLimited(InputStream inputStream, long maxBytes) throws IOException {
+        byte[] buffer = new byte[8192];
+        var output = new java.io.ByteArrayOutputStream();
+        int read;
+
+        while ((read = inputStream.read(buffer)) != -1) {
+            if (output.size() + read > maxBytes) {
+                throw new IOException("Response body exceeds maximum size of " + maxBytes + " bytes");
+            }
+            output.write(buffer, 0, read);
+        }
+
+        return output.toByteArray();
     }
 }
