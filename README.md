@@ -104,3 +104,5 @@ var result = Http
 ```
 
 Deprecated: `withFailsafe(int, Duration)` still registers failsafe state JVM-wide by URL. Prefer `withRequestFailsafe(int, Duration)` or `withFailsafe(String, int, Duration)` instead.
+
+When failsafe is active, `send()` returns `status() == -1` and `error()` contains `Http.FAILSAFE_ACTIVE_MESSAGE`.

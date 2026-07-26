@@ -23,6 +23,9 @@ public class Http {
     /** Default maximum response body size: 64 MiB. */
     public static final long DEFAULT_MAX_RESPONSE_SIZE = 64L * 1024 * 1024;
 
+    /** Error message when a request is skipped because failsafe is active. */
+    public static final String FAILSAFE_ACTIVE_MESSAGE = "Failsafe is active; request was not sent";
+
     private static final Map<String, Failsafe> SHARED_FAILSAFES = new ConcurrentHashMap<>();
 
     private final String method;
@@ -311,14 +314,12 @@ public class Http {
     public Result send() {
         var result = Result.create();
         if (Utils.activeFailsafe(url)) {
-            result.withStatus(0);
-            return result;
+            return blockedByFailsafe(result);
         }
 
         var currentFailsafe = resolveFailsafe();
         if (currentFailsafe != null && currentFailsafe.isActive()) {
-            result.withStatus(0);
-            return result;
+            return blockedByFailsafe(result);
         }
 
         var httpClient = Utils.getHttpClient(followRedirects, disableValidation, proxy);
@@ -379,7 +380,13 @@ public class Http {
                         .withBody(response.body())
                         .withStatus(response.statusCode());
             }
-        } catch (IOException | InterruptedException | URISyntaxException e) { //NOSONAR
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            String message = e.getMessage();
+            if (message != null && !message.isBlank()) {
+                result.withBody(Utils.clean(message));
+            }
+        } catch (IOException | URISyntaxException e) {
             String message = e.getMessage();
             if (message != null && !message.isBlank()) {
                 result.withBody(Utils.clean(message));
@@ -405,6 +412,10 @@ public class Http {
         }
 
         return failsafe;
+    }
+
+    private static Result blockedByFailsafe(Result result) {
+        return result.withStatus(-1).withBody(FAILSAFE_ACTIVE_MESSAGE);
     }
 
     private static byte[] readLimited(InputStream inputStream, long maxBytes) throws IOException {

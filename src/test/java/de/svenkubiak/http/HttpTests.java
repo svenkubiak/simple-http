@@ -267,7 +267,8 @@ class HttpTests {
 
         //then
         assertThat(result).isNotNull();
-        assertThat(result.status()).isEqualTo(0);
+        assertThat(result.status()).isEqualTo(-1);
+        assertThat(result.error()).isEqualTo(Http.FAILSAFE_ACTIVE_MESSAGE);
     }
 
     @Test
@@ -294,7 +295,8 @@ class HttpTests {
         result = Http.get(url).send();
 
         //then
-        assertThat(result.status()).isEqualTo(0);
+        assertThat(result.status()).isEqualTo(-1);
+        assertThat(result.error()).isEqualTo(Http.FAILSAFE_ACTIVE_MESSAGE);
     }
 
     @Test
@@ -326,7 +328,8 @@ class HttpTests {
                 .send();
 
         //then
-        assertThat(result.status()).isEqualTo(0);
+        assertThat(result.status()).isEqualTo(-1);
+        assertThat(result.error()).isEqualTo(Http.FAILSAFE_ACTIVE_MESSAGE);
     }
 
     @Test
