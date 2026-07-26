@@ -1,11 +1,8 @@
 package de.svenkubiak.utils;
 
-import de.svenkubiak.http.Failsafe;
-import de.svenkubiak.http.Result;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpClient;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -54,22 +51,6 @@ class UtilsTests {
     }
 
     @Test
-    void testSetFailsafe() {
-        //given
-        String url = "http://localhost:8080";
-        Failsafe failsafe = Failsafe.of(5, Duration.ofMinutes(1));
-        Result result = Result.create().withStatus(200);
-
-        //when
-        Utils.setFailsafe(url, result);
-
-        //then
-        assertThat(result).isNotNull();
-        assertThat(failsafe.getCount()).isEqualTo(1);
-        assertThat(failsafe.getUntil()).isNull();
-    }
-
-    @Test
     void testClean() {
         //given
         String dirtyString = "Hello, World! @#$%^&*()_+-=[]{}|;':\",./<>?`~";
@@ -106,52 +87,6 @@ class UtilsTests {
         //then
         assertThat(cleaned).isNotNull();
         assertThat(cleaned).isEmpty();
-    }
-
-    @Test
-    void testAddFailsafe() {
-        //given
-        String url = "http://localhost:8080/test";
-        Failsafe failsafe = Failsafe.of(3, Duration.ofSeconds(10));
-
-        //when
-        Utils.addFailsafe(url, failsafe);
-
-        //then
-        assertThat(Utils.activeFailsafe(url)).isFalse();
-    }
-
-    @Test
-    void testActiveFailsafe() {
-        //given
-        String url = "http://localhost:8080/test-active";
-        Failsafe failsafe = Failsafe.of(2, Duration.ofSeconds(5));
-        Utils.addFailsafe(url, failsafe);
-        Result errorResult = Result.create().withStatus(404);
-
-        //when
-        Utils.setFailsafe(url, errorResult);
-        Utils.setFailsafe(url, errorResult);
-
-        //then
-        assertThat(Utils.activeFailsafe(url)).isTrue();
-    }
-
-    @Test
-    void testActiveFailsafeWithSuccess() {
-        //given
-        String url = "http://localhost:8080/test-success";
-        Failsafe failsafe = Failsafe.of(2, Duration.ofSeconds(5));
-        Utils.addFailsafe(url, failsafe);
-        Result errorResult = Result.create().withStatus(404);
-        Result successResult = Result.create().withStatus(200);
-
-        //when
-        Utils.setFailsafe(url, errorResult);
-        Utils.setFailsafe(url, successResult);
-
-        //then
-        assertThat(Utils.activeFailsafe(url)).isFalse();
     }
 
     @Test
@@ -241,38 +176,6 @@ class UtilsTests {
     }
 
     @Test
-    void testSetFailsafeWithErrorResult() {
-        //given
-        String url = "http://localhost:8080/test-error";
-        Failsafe failsafe = Failsafe.of(2, Duration.ofSeconds(5));
-        Utils.addFailsafe(url, failsafe);
-        Result errorResult = Result.create().withStatus(500);
-
-        //when
-        Utils.setFailsafe(url, errorResult);
-
-        //then
-        assertThat(Utils.activeFailsafe(url)).isFalse();
-    }
-
-    @Test
-    void testSetFailsafeWithSuccessResult() {
-        //given
-        String url = "http://localhost:8080/test-success-result";
-        Failsafe failsafe = Failsafe.of(2, Duration.ofSeconds(5));
-        Utils.addFailsafe(url, failsafe);
-        Result errorResult = Result.create().withStatus(404);
-        Result successResult = Result.create().withStatus(200);
-
-        //when
-        Utils.setFailsafe(url, errorResult);
-        Utils.setFailsafe(url, successResult);
-
-        //then
-        assertThat(Utils.activeFailsafe(url)).isFalse();
-    }
-
-    @Test
     void testIsSuccessCodeWithEdgeCases() {
         //given
         int negativeCode = -1;
@@ -291,17 +194,5 @@ class UtilsTests {
         assertThat(zeroResult).isFalse();
         assertThat(fourHundredResult).isFalse();
         assertThat(fiveHundredResult).isFalse();
-    }
-
-    @Test
-    void testActiveFailsafeWithNonExistentUrl() {
-        //given
-        String nonExistentUrl = "http://localhost:8080/non-existent";
-
-        //when
-        boolean isActive = Utils.activeFailsafe(nonExistentUrl);
-
-        //then
-        assertThat(isActive).isFalse();
     }
 }

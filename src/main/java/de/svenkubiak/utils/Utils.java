@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 
 public final class Utils {
     private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(8, 0.9f, 1);
-    private static final Map<String, Failsafe> FAIL_SAFES = new ConcurrentHashMap<>(200, 0.9f, 1);
+    private static final Map<String, Failsafe> URL_FAILSAFES = new ConcurrentHashMap<>(200, 0.9f, 1);
     private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
     private static final Pattern PATTERN = Pattern.compile("[^A-Za-z0-9 ]");
     private static final String URL_MUST_NOT_BE_NULL = "url must not be null";
@@ -144,13 +144,13 @@ public final class Utils {
         Objects.requireNonNull(url, URL_MUST_NOT_BE_NULL);
         Objects.requireNonNull(failsafe, "failsafe must not be null");
 
-        FAIL_SAFES.put(url, failsafe);
+        URL_FAILSAFES.put(url, failsafe);
     }
 
-    private static Failsafe getFailsafe(String url) {
+    static Failsafe getFailsafe(String url) {
         Objects.requireNonNull(url, URL_MUST_NOT_BE_NULL);
 
-        return FAIL_SAFES.get(url);
+        return URL_FAILSAFES.get(url);
     }
 
     public static void setFailsafe(String url, Result result) {
@@ -165,12 +165,12 @@ public final class Utils {
                 failsafe.error();
             }
 
-            FAIL_SAFES.put(url, failsafe);
+            URL_FAILSAFES.put(url, failsafe);
         }
     }
 
     public static boolean activeFailsafe(String url) {
-        var failsafe = Utils.getFailsafe(url);
+        var failsafe = getFailsafe(url);
 
         return failsafe != null && failsafe.isActive();
     }

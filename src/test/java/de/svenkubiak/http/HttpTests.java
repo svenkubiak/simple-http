@@ -241,31 +241,108 @@ class HttpTests {
     }
 
     @Test
-    void testWithFailsafe(WireMockRuntimeInfo runtime) {
+    void testWithRequestFailsafe(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(get("/test-failsafe").willReturn(badRequest()));
+        var request = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe")
+                .withRequestFailsafe(2, Duration.of(10, SECONDS));
 
         //when
-        Result result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").withFailsafe(2, Duration.of(10, SECONDS)).send();
+        Result result = request.send();
 
         //then
         assertThat(result).isNotNull();
         assertThat(result.status()).isEqualTo(400);
 
         //when
-        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").send();
+        result = request.send();
 
         //then
         assertThat(result).isNotNull();
         assertThat(result.status()).isEqualTo(400);
 
         //when
-        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe").send();
+        result = request.send();
 
         //then
         assertThat(result).isNotNull();
         assertThat(result.status()).isEqualTo(0);
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    void testDeprecatedWithFailsafeByUrl(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-failsafe-deprecated").willReturn(badRequest()));
+        String url = runtime.getHttpBaseUrl() + "/test-failsafe-deprecated";
+
+        //when
+        Result result = Http.get(url).withFailsafe(2, Duration.of(10, SECONDS)).send();
+
+        //then
+        assertThat(result.status()).isEqualTo(400);
+
+        //when
+        result = Http.get(url).send();
+
+        //then
+        assertThat(result.status()).isEqualTo(400);
+
+        //when
+        result = Http.get(url).send();
+
+        //then
+        assertThat(result.status()).isEqualTo(0);
+    }
+
+    @Test
+    void testWithFailsafeKey(WireMockRuntimeInfo runtime) {
+        //given
+        String key = UUID.randomUUID().toString();
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-failsafe-key").willReturn(badRequest()));
+
+        //when
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe-key")
+                .withFailsafe(key, 2, Duration.of(10, SECONDS))
+                .send();
+
+        //then
+        assertThat(result.status()).isEqualTo(400);
+
+        //when
+        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe-key")
+                .withFailsafe(key, 2, Duration.of(10, SECONDS))
+                .send();
+
+        //then
+        assertThat(result.status()).isEqualTo(400);
+
+        //when
+        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe-key")
+                .withFailsafe(key, 2, Duration.of(10, SECONDS))
+                .send();
+
+        //then
+        assertThat(result.status()).isEqualTo(0);
+    }
+
+    @Test
+    void testWithRequestFailsafeNotSharedAcrossInstances(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-failsafe-isolated").willReturn(badRequest()));
+        String url = runtime.getHttpBaseUrl() + "/test-failsafe-isolated";
+
+        //when
+        Result first = Http.get(url).withRequestFailsafe(1, Duration.of(10, SECONDS)).send();
+        Result second = Http.get(url).withRequestFailsafe(1, Duration.of(10, SECONDS)).send();
+
+        //then
+        assertThat(first.status()).isEqualTo(400);
+        assertThat(second.status()).isEqualTo(400);
     }
 
     @Test

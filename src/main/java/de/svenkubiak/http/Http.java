@@ -15,12 +15,15 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class Http {
     /** Default maximum response body size: 64 MiB. */
     public static final long DEFAULT_MAX_RESPONSE_SIZE = 64L * 1024 * 1024;
+
+    private static final Map<String, Failsafe> SHARED_FAILSAFES = new ConcurrentHashMap<>();
 
     private final String method;
     private final Map<String, String> headers = new HashMap<>();
@@ -33,6 +36,8 @@ public class Http {
     private boolean disableValidation;
     private boolean binaryResponse;
     private long maxResponseSize = DEFAULT_MAX_RESPONSE_SIZE;
+    private Failsafe failsafe;
+    private String failsafeKey;
 
     private Http(String url, String method) {
         this.url = Objects.requireNonNull(url, "url can not be null");
@@ -149,16 +154,57 @@ public class Http {
     }
 
     /**
-     * Adds a failsafe to the request. After the threshold has been reached
-     * any following request will be delayed by the given delay
+     * Adds a failsafe scoped to this {@code Http} instance. Reuse the same instance
+     * across calls to accumulate failures.
      *
      * @param threshold The threshold for the failsafe
      * @param delay The delay until the next request
      * @return The Http instance
      */
+    public Http withRequestFailsafe(int threshold, Duration delay) {
+        Objects.requireNonNull(delay, "delay can not be null");
+        this.failsafe = Failsafe.of(threshold, delay);
+        this.failsafeKey = null;
+
+        return this;
+    }
+
+    /**
+     * Adds a failsafe shared JVM-wide by URL. New {@code Http} instances for the same
+     * URL share the same circuit-breaker state.
+     *
+     * @param threshold The threshold for the failsafe
+     * @param delay The delay until the next request
+     * @return The Http instance
+     * @deprecated Use {@link #withRequestFailsafe(int, Duration)} for instance-local state,
+     *             or {@link #withFailsafe(String, int, Duration)} to share state by an explicit key.
+     *             URL-based failsafe state is JVM-global and may interfere across unrelated callers.
+     */
+    @Deprecated(since = "2.0.8", forRemoval = true)
     public Http withFailsafe(int threshold, Duration delay) {
         Objects.requireNonNull(delay, "delay can not be null");
+        this.failsafe = null;
+        this.failsafeKey = null;
         Utils.addFailsafe(url, Failsafe.of(threshold, delay));
+
+        return this;
+    }
+
+    /**
+     * Adds a failsafe shared by an explicit key across {@code Http} instances.
+     * Use this when multiple callers should share the same circuit-breaker state.
+     *
+     * @param key A caller-defined key to group failsafe state
+     * @param threshold The threshold for the failsafe
+     * @param delay The delay until the next request
+     * @return The Http instance
+     */
+    public Http withFailsafe(String key, int threshold, Duration delay) {
+        Objects.requireNonNull(key, "key can not be null");
+        Objects.requireNonNull(delay, "delay can not be null");
+        this.failsafeKey = key;
+        this.failsafe = null;
+        SHARED_FAILSAFES.computeIfAbsent(key, ignored -> Failsafe.of(threshold, delay));
 
         return this;
     }
@@ -269,6 +315,12 @@ public class Http {
             return result;
         }
 
+        var currentFailsafe = resolveFailsafe();
+        if (currentFailsafe != null && currentFailsafe.isActive()) {
+            result.withStatus(0);
+            return result;
+        }
+
         var httpClient = Utils.getHttpClient(followRedirects, disableValidation, proxy);
         try {
             var requestBuilder = HttpRequest.newBuilder()
@@ -334,9 +386,25 @@ public class Http {
             }
         }
 
+        if (currentFailsafe != null) {
+            if (result.isValid()) {
+                currentFailsafe.success();
+            } else {
+                currentFailsafe.error();
+            }
+        }
+
         Utils.setFailsafe(url, result);
 
         return result;
+    }
+
+    private Failsafe resolveFailsafe() {
+        if (failsafeKey != null) {
+            return SHARED_FAILSAFES.get(failsafeKey);
+        }
+
+        return failsafe;
     }
 
     private static byte[] readLimited(InputStream inputStream, long maxBytes) throws IOException {
