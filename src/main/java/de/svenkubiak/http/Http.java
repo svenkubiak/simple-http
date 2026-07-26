@@ -20,14 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class Http {
-    /** Default maximum response body size: 64 MiB. */
-    public static final long DEFAULT_MAX_RESPONSE_SIZE = 64L * 1024 * 1024;
-
-    /** Error message when a request is skipped because failsafe is active. */
-    public static final String FAILSAFE_ACTIVE_MESSAGE = "Failsafe is active; request was not sent";
+    public static final long DEFAULT_MAX_RESPONSE_SIZE = 64L * 1024 * 1024; //Default maximum response body size: 64 MiB.
 
     private static final Map<String, Failsafe> SHARED_FAILSAFES = new ConcurrentHashMap<>();
-
     private final String method;
     private final Map<String, String> headers = new HashMap<>();
     private String url;
@@ -314,12 +309,12 @@ public class Http {
     public Result send() {
         var result = Result.create();
         if (Utils.activeFailsafe(url)) {
-            return blockedByFailsafe(result);
+            return Utils.blockedByFailsafe(result);
         }
 
         var currentFailsafe = resolveFailsafe();
         if (currentFailsafe != null && currentFailsafe.isActive()) {
-            return blockedByFailsafe(result);
+            return Utils.blockedByFailsafe(result);
         }
 
         var httpClient = Utils.getHttpClient(followRedirects, disableValidation, proxy);
@@ -345,7 +340,7 @@ public class Http {
                         .forEach((key, value) -> result.withHeader(key, value.getFirst()));
 
                 try (InputStream inputStream = response.body()) {
-                    byte[] data = readLimited(inputStream, maxResponseSize);
+                    byte[] data = Utils.readLimited(inputStream, maxResponseSize);
                     result.withStatus(response.statusCode());
                     if (binaryResponse) {
                         result.withBinaryBody(data);
@@ -412,24 +407,5 @@ public class Http {
         }
 
         return failsafe;
-    }
-
-    private static Result blockedByFailsafe(Result result) {
-        return result.withStatus(-1).withBody(FAILSAFE_ACTIVE_MESSAGE);
-    }
-
-    private static byte[] readLimited(InputStream inputStream, long maxBytes) throws IOException {
-        byte[] buffer = new byte[8192];
-        var output = new java.io.ByteArrayOutputStream();
-        int read;
-
-        while ((read = inputStream.read(buffer)) != -1) {
-            if (output.size() + read > maxBytes) {
-                throw new IOException("Response body exceeds maximum size of " + maxBytes + " bytes");
-            }
-            output.write(buffer, 0, read);
-        }
-
-        return output.toByteArray();
     }
 }

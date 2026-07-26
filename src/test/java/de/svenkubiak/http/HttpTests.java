@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import de.svenkubiak.utils.Utils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -268,35 +269,7 @@ class HttpTests {
         //then
         assertThat(result).isNotNull();
         assertThat(result.status()).isEqualTo(-1);
-        assertThat(result.error()).isEqualTo(Http.FAILSAFE_ACTIVE_MESSAGE);
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    void testDeprecatedWithFailsafeByUrl(WireMockRuntimeInfo runtime) {
-        //given
-        WireMock wireMock = runtime.getWireMock();
-        wireMock.register(get("/test-failsafe-deprecated").willReturn(badRequest()));
-        String url = runtime.getHttpBaseUrl() + "/test-failsafe-deprecated";
-
-        //when
-        Result result = Http.get(url).withFailsafe(2, Duration.of(10, SECONDS)).send();
-
-        //then
-        assertThat(result.status()).isEqualTo(400);
-
-        //when
-        result = Http.get(url).send();
-
-        //then
-        assertThat(result.status()).isEqualTo(400);
-
-        //when
-        result = Http.get(url).send();
-
-        //then
-        assertThat(result.status()).isEqualTo(-1);
-        assertThat(result.error()).isEqualTo(Http.FAILSAFE_ACTIVE_MESSAGE);
+        assertThat(result.error()).isEqualTo(Utils.FAILSAFE_ACTIVE_MESSAGE);
     }
 
     @Test
@@ -329,7 +302,7 @@ class HttpTests {
 
         //then
         assertThat(result.status()).isEqualTo(-1);
-        assertThat(result.error()).isEqualTo(Http.FAILSAFE_ACTIVE_MESSAGE);
+        assertThat(result.error()).isEqualTo(Utils.FAILSAFE_ACTIVE_MESSAGE);
     }
 
     @Test

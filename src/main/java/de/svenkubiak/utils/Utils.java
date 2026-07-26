@@ -7,6 +7,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.net.Socket;
@@ -24,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 public final class Utils {
+    public static final String FAILSAFE_ACTIVE_MESSAGE = "Failsafe is active; request was not sent";
     private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(8, 0.9f, 1);
     private static final Map<String, Failsafe> URL_FAILSAFES = new ConcurrentHashMap<>(200, 0.9f, 1);
     private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
@@ -177,5 +180,24 @@ public final class Utils {
 
     public static void shutdown() {
         HTTP_CLIENTS.values().forEach(HttpClient::shutdownNow);
+    }
+
+    public static Result blockedByFailsafe(Result result) {
+        return result.withStatus(-1).withBody(FAILSAFE_ACTIVE_MESSAGE);
+    }
+
+    public static byte[] readLimited(InputStream inputStream, long maxBytes) throws IOException {
+        byte[] buffer = new byte[8192];
+        var output = new java.io.ByteArrayOutputStream();
+        int read;
+
+        while ((read = inputStream.read(buffer)) != -1) {
+            if (output.size() + read > maxBytes) {
+                throw new IOException("Response body exceeds maximum size of " + maxBytes + " bytes");
+            }
+            output.write(buffer, 0, read);
+        }
+
+        return output.toByteArray();
     }
 }
