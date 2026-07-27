@@ -12,6 +12,8 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
@@ -141,6 +143,17 @@ public final class Utils {
 
     public static String clean(String string) {
         return PATTERN.matcher(string).replaceAll("");
+    }
+
+    public static URI toAllowedUri(String url) throws URISyntaxException {
+        Objects.requireNonNull(url, URL_MUST_NOT_BE_NULL);
+        var uri = new URI(url);
+        var scheme = uri.getScheme();
+        if (scheme == null || (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme))) {
+            throw new URISyntaxException(url, "Only http and https URLs are allowed");
+        }
+
+        return uri;
     }
 
     public static void addFailsafe(String url, Failsafe failsafe) {

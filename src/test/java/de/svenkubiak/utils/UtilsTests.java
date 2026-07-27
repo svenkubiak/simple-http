@@ -2,11 +2,13 @@ package de.svenkubiak.utils;
 
 import org.junit.jupiter.api.Test;
 
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class UtilsTests {
 
@@ -194,5 +196,19 @@ class UtilsTests {
         assertThat(zeroResult).isFalse();
         assertThat(fourHundredResult).isFalse();
         assertThat(fiveHundredResult).isFalse();
+    }
+
+    @Test
+    void testToAllowedUri() throws URISyntaxException {
+        assertThat(Utils.toAllowedUri("https://example.com/path").toString())
+                .isEqualTo("https://example.com/path");
+        assertThat(Utils.toAllowedUri("http://localhost:8080").getScheme()).isEqualTo("http");
+    }
+
+    @Test
+    void testToAllowedUriRejectsFileScheme() {
+        assertThatThrownBy(() -> Utils.toAllowedUri("file:///etc/passwd"))
+                .isInstanceOf(URISyntaxException.class)
+                .hasMessageContaining("Only http and https URLs are allowed");
     }
 }

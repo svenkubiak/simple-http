@@ -5,7 +5,6 @@ import de.svenkubiak.utils.Utils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -288,14 +287,30 @@ public class Http {
      * Requests exceeding this limit fail with an error result.
      * Defaults to {@value #DEFAULT_MAX_RESPONSE_SIZE} bytes (64 MiB).
      *
-     * @param maxBytes Maximum response size in bytes; 0 means unlimited
+     * @param maxBytes Maximum response size in bytes; must be positive
      * @return The Http instance
+     * @throws IllegalArgumentException if {@code maxBytes} is zero or negative
      */
     public Http withMaxResponseSize(long maxBytes) {
-        if (maxBytes < 0) {
-            throw new IllegalArgumentException("maxBytes must not be negative");
+        if (maxBytes <= 0) {
+            throw new IllegalArgumentException(
+                    "maxBytes must be positive; use withUnlimitedResponseSize() to disable the response size limit");
         }
         this.maxResponseSize = maxBytes;
+        return this;
+    }
+
+    /**
+     * Disables the response body size limit. The full response is buffered in memory.
+     * Do not use with untrusted or user-controlled endpoints.
+     *
+     * @return The Http instance
+     * @deprecated Prefer {@link #withMaxResponseSize(long)} with an explicit limit.
+     *             Unlimited responses can cause out-of-memory errors.
+     */
+    @Deprecated(since = "2.1.1", forRemoval = true)
+    public Http withUnlimitedResponseSize() {
+        this.maxResponseSize = 0;
         return this;
     }
 
@@ -320,7 +335,7 @@ public class Http {
         var httpClient = Utils.getHttpClient(followRedirects, disableValidation, proxy);
         try {
             var requestBuilder = HttpRequest.newBuilder()
-                    .uri(new URI(url))
+                    .uri(Utils.toAllowedUri(url))
                     .timeout(timeout)
                     .version(version)
                     .method(method, HttpRequest.BodyPublishers.ofString(body));

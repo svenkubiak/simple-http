@@ -19,27 +19,27 @@ public class Failsafe {
         return new Failsafe(threshold, timeout);
     }
 
-    public boolean isActive() {
+    public synchronized boolean isActive() {
         return until != null && LocalDateTime.now().isBefore(until);
     }
 
-    public void error() {
+    public synchronized void error() {
         count = count + 1;
         if (count > threshold) {
             until = LocalDateTime.now().plus(delay);
         }
     }
 
-    public void success() {
+    public synchronized void success() {
         count = 1;
         until = null;
     }
 
-    public int getCount() {
+    public synchronized int getCount() {
         return count;
     }
 
-    public LocalDateTime getUntil() {
+    public synchronized LocalDateTime getUntil() {
         return until;
     }
 }

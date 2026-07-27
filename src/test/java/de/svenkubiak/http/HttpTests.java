@@ -17,6 +17,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @WireMockTest(httpsEnabled = true)
 class HttpTests {
@@ -273,6 +274,34 @@ class HttpTests {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
+    void testDeprecatedWithFailsafeByUrl(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-failsafe-deprecated").willReturn(badRequest()));
+        String url = runtime.getHttpBaseUrl() + "/test-failsafe-deprecated";
+
+        //when
+        Result result = Http.get(url).withFailsafe(2, Duration.of(10, SECONDS)).send();
+
+        //then
+        assertThat(result.status()).isEqualTo(400);
+
+        //when
+        result = Http.get(url).send();
+
+        //then
+        assertThat(result.status()).isEqualTo(400);
+
+        //when
+        result = Http.get(url).send();
+
+        //then
+        assertThat(result.status()).isEqualTo(-1);
+        assertThat(result.error()).isEqualTo(Utils.FAILSAFE_ACTIVE_MESSAGE);
+    }
+
+    @Test
     void testWithFailsafeKey(WireMockRuntimeInfo runtime) {
         //given
         String key = UUID.randomUUID().toString();
@@ -503,5 +532,34 @@ class HttpTests {
         assertThat(result500).isNotNull();
         assertThat(result500.status()).isEqualTo(500);
         assertThat(result500.isValid()).isFalse();
+    }
+
+    @Test
+    void testInvalidUrlScheme() {
+        Result result = Http.get("file:///etc/passwd").send();
+
+        assertThat(result.status()).isEqualTo(-1);
+        assertThat(result.error()).contains("Only http and https URLs are allowed");
+    }
+
+    @Test
+    void testWithMaxResponseSizeRejectsZero() {
+        assertThatThrownBy(() -> Http.get("https://example.com").withMaxResponseSize(0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("withUnlimitedResponseSize");
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    void testWithUnlimitedResponseSize(WireMockRuntimeInfo runtime) {
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/unlimited").willReturn(ok().withBody(RESPONSE)));
+
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/unlimited")
+                .withUnlimitedResponseSize()
+                .send();
+
+        assertThat(result.status()).isEqualTo(200);
+        assertThat(result.body()).isEqualTo(RESPONSE);
     }
 }
