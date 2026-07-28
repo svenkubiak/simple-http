@@ -40,7 +40,7 @@ Every request starts with these defaults unless you override them:
 | HTTP version | HTTP/2 (downgrades to HTTP/1.1 if needed) |
 | Redirects | Not followed |
 | TLS validation | Strict (system trust store) |
-| Response size limit | 64 MiB (`Http.DEFAULT_MAX_RESPONSE_SIZE`) |
+| Response size limit | 64 MiB (override with `withMaxResponseSize(long)`) |
 | Allowed URL schemes | `http` and `https` only |
 
 Configuration is done through the fluent methods on `Http` (for example `withTimeout`, `withProxy`, `withMaxResponseSize`). The underlying JDK `HttpClient` is not exposed directly.
@@ -149,11 +149,14 @@ Security
 
 **Authentication:** Pass tokens via headers (for example `Authorization: Bearer …`). The library does not log requests or responses. Avoid logging headers or bodies that contain credentials in your application code.
 
-Failsafe
+Thread safety
 ------------------
-You can use a circuit breaker inspired failsafe. After n failed requests (= all non-2xx status) further requests are paused until a configured delay has passed.
 
-Scope failsafe to the `Http` instance and reuse it across calls:
+The typical pattern — create a new `Http` instance per request and call `send()` from one thread — is safe. Each request keeps its own configuration; the underlying JDK `HttpClient` instances are cached in `Utils` and are safe for concurrent use.
+
+**Shared `Http` instances:** An `Http` object is not thread-safe for concurrent configuration (`withHeader`, `withBody`, `withTimeout`, and so on). Finish configuring an instance before calling `send()` from multiple threads, or use one instance per thread.
+
+**Failsafe:** Failsafe counters are synchronized and safe when several threads call `send()` on the same configured `Http` instance. Creating a new `Http.get(...).withFailsafe(...).send()` on every call does **not** share failsafe state — keep one instance and call `send()` repeatedly:
 
 ```
 var request = Http
@@ -165,9 +168,15 @@ var result = request.send();
 result = request.send();
 ```
 
-When failsafe is active, `send()` returns `status() == -1` and `error()` contains `"Failsafe is active; request was not sent"`.
+**Shutdown:** `Http.shutdown()` stops every cached client in the JVM for this class loader. Other libraries or modules using simple-http in the same process will fail subsequent requests. Use only at application teardown (for example a servlet `contextDestroyed` hook), not inside reusable library code.
 
-Failsafe state is thread-safe; the same `Http` instance can be used from multiple threads.
+Failsafe
+------------------
+You can use a circuit breaker inspired failsafe. After n failed requests (= all non-2xx status) further requests are paused until a configured delay has passed.
+
+Configure failsafe once on an `Http` instance and reuse that instance for every call that should share the circuit breaker (see Thread safety above).
+
+When failsafe is active, `send()` returns `status() == -1` and `error()` contains `"Failsafe is active; request was not sent"`.
 
 Migration from 2.x
 ------------------

@@ -8,7 +8,10 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.*;
+import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -16,15 +19,10 @@ import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
 public final class Utils {
     public static final String FAILSAFE_ACTIVE_MESSAGE = "Failsafe is active; request was not sent";
-    private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(8, 0.9f, 1);
-    private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
     private static final Pattern PATTERN = Pattern.compile("[^A-Za-z0-9 ]");
     @SuppressWarnings("rawtypes")
     private static final Set SUCCESS_CODES;
@@ -85,6 +83,14 @@ public final class Utils {
         return sslContext;
     }
 
+    /**
+     * Applies trust-all TLS settings to a client builder.
+     * Used by {@link de.svenkubiak.http.Http#disableAllHttpsValidations()}; not intended for direct use.
+     */
+    public static void applyDisableValidation(HttpClient.Builder builder) {
+        builder.sslContext(getSSLContext());
+    }
+
     public static boolean isSuccessCode(int statusCode) {
         return SUCCESS_CODES.contains(statusCode);
     }
@@ -103,36 +109,6 @@ public final class Utils {
         return buffer.toString();
     }
 
-    public static HttpClient getHttpClient(boolean followRedirects, boolean disableValidation, InetSocketAddress proxy) {
-        var key = String.valueOf(followRedirects) + String.valueOf(disableValidation);
-
-        if (proxy != null) {
-            key = key + proxy.getHostString() + ":" + proxy.getPort();
-        }
-
-        var httpClient = HTTP_CLIENTS.get(key);
-        if (httpClient == null || httpClient.isTerminated()) {
-            var clientBuilder = HttpClient.newBuilder().executor(EXECUTOR);
-
-            if (followRedirects) {
-                clientBuilder.followRedirects(HttpClient.Redirect.NORMAL);
-            }
-
-            if (disableValidation) {
-                clientBuilder.sslContext(Utils.getSSLContext());
-            }
-
-            if (proxy != null) {
-                clientBuilder.proxy(ProxySelector.of(proxy));
-            }
-
-            httpClient = clientBuilder.build();
-            HTTP_CLIENTS.put(key, httpClient);
-        }
-
-        return httpClient;
-    }
-
     public static String clean(String string) {
         return PATTERN.matcher(string).replaceAll("");
     }
@@ -146,10 +122,6 @@ public final class Utils {
         }
 
         return uri;
-    }
-
-    public static void shutdown() {
-        HTTP_CLIENTS.values().forEach(HttpClient::shutdownNow);
     }
 
     public static Result blockedByFailsafe(Result result) {

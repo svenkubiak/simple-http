@@ -3,7 +3,6 @@ package de.svenkubiak.utils;
 import org.junit.jupiter.api.Test;
 
 import java.net.URISyntaxException;
-import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Map;
 
@@ -37,19 +36,6 @@ class UtilsTests {
 
         //then
         assertThat("username=foo&password=bar".equals(data) || "password=bar&username=foo".equals(data)).isTrue();
-    }
-
-    @Test
-    void testHttpClient() {
-        //given
-        HttpClient client;
-
-        //then
-        client = Utils.getHttpClient(true, true, null);
-
-        //then
-        assertThat(client).isNotNull();
-        assertThat(client).isInstanceOf(HttpClient.class);
     }
 
     @Test
@@ -130,51 +116,6 @@ class UtilsTests {
         //then
         assertThat(data).isNotNull();
         assertThat(data).isEqualTo("key=value");
-    }
-
-    @Test
-    void testGetHttpClientDifferentCombinations() {
-        //given
-        boolean followRedirects1 = true;
-        boolean disableValidation1 = true;
-        boolean followRedirects2 = false;
-        boolean disableValidation2 = false;
-        boolean followRedirects3 = true;
-        boolean disableValidation3 = false;
-        boolean followRedirects4 = false;
-        boolean disableValidation4 = true;
-
-        //when
-        HttpClient client1 = Utils.getHttpClient(followRedirects1, disableValidation1, null);
-        HttpClient client2 = Utils.getHttpClient(followRedirects2, disableValidation2, null);
-        HttpClient client3 = Utils.getHttpClient(followRedirects3, disableValidation3, null);
-        HttpClient client4 = Utils.getHttpClient(followRedirects4, disableValidation4, null);
-
-        //then
-        assertThat(client1).isNotNull();
-        assertThat(client2).isNotNull();
-        assertThat(client3).isNotNull();
-        assertThat(client4).isNotNull();
-        assertThat(client1).isInstanceOf(HttpClient.class);
-        assertThat(client2).isInstanceOf(HttpClient.class);
-        assertThat(client3).isInstanceOf(HttpClient.class);
-        assertThat(client4).isInstanceOf(HttpClient.class);
-    }
-
-    @Test
-    void testGetHttpClientCaching() {
-        //given
-        boolean followRedirects = true;
-        boolean disableValidation = false;
-
-        //when
-        HttpClient client1 = Utils.getHttpClient(followRedirects, disableValidation, null);
-        HttpClient client2 = Utils.getHttpClient(followRedirects, disableValidation, null);
-
-        //then
-        assertThat(client1).isNotNull();
-        assertThat(client2).isNotNull();
-        assertThat(client1).isSameAs(client2);
     }
 
     @Test

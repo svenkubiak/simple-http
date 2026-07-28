@@ -12,6 +12,9 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -287,6 +290,53 @@ class HttpTests {
         //then
         assertThat(first.status()).isEqualTo(400);
         assertThat(second.status()).isEqualTo(400);
+    }
+
+    @Test
+    void testConcurrentSendWithSharedFailsafe(WireMockRuntimeInfo runtime) throws InterruptedException {
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-concurrent-failsafe").willReturn(badRequest()));
+        var request = Http.get(runtime.getHttpBaseUrl() + "/test-concurrent-failsafe")
+                .withFailsafe(50, Duration.of(10, SECONDS));
+
+        int threads = 20;
+        var latch = new CountDownLatch(threads);
+        var results = new CopyOnWriteArrayList<Result>();
+
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int i = 0; i < threads; i++) {
+                executor.submit(() -> {
+                    try {
+                        results.add(request.send());
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+            latch.await();
+        }
+
+        assertThat(results).hasSize(threads);
+        assertThat(results).allMatch(result -> result.status() == 400);
+    }
+
+    @Test
+    void testShutdownAllowsNewRequests(WireMockRuntimeInfo runtime) {
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(get("/test-after-shutdown").willReturn(ok().withBody(RESPONSE)));
+
+        Http.shutdown();
+        Result result = Http.get(runtime.getHttpBaseUrl() + "/test-after-shutdown").send();
+
+        assertThat(result.isValid()).isTrue();
+        assertThat(result.body()).isEqualTo(RESPONSE);
+    }
+
+    @Test
+    void testWithFailsafeRejectsInvalidThreshold() {
+        assertThatThrownBy(() -> Http.get("https://example.com").withFailsafe(0, Duration.of(10, SECONDS)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("threshold must be positive");
     }
 
     @Test

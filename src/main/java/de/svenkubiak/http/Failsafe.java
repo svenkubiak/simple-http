@@ -11,6 +11,9 @@ public class Failsafe {
     private LocalDateTime until;
 
     public Failsafe(int threshold, Duration delay) {
+        if (threshold <= 0) {
+            throw new IllegalArgumentException("threshold must be positive");
+        }
         this.threshold = threshold;
         this.delay = Objects.requireNonNull(delay, "delay can not be null");
     }

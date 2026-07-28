@@ -8,6 +8,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class FailsafeTests {
     @Test
@@ -88,5 +89,12 @@ public class FailsafeTests {
         }
 
         assertThat(failsafe.getCount()).isEqualTo(threads + 1);
+    }
+
+    @Test
+    void testInvalidThreshold() {
+        assertThatThrownBy(() -> Failsafe.of(0, Duration.of(5, ChronoUnit.SECONDS)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("threshold must be positive");
     }
 }

@@ -5,6 +5,7 @@ import de.svenkubiak.utils.Utils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.net.ProxySelector;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -14,10 +15,16 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class Http {
+    private static final Object CLIENT_LOCK = new Object();
+    private static final Map<String, HttpClient> HTTP_CLIENTS = new ConcurrentHashMap<>(8, 0.9f, 1);
+    private static final Executor EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
     private static final long DEFAULT_MAX_RESPONSE_SIZE = 64L * 1024 * 1024; //Default maximum response body size: 64 MiB.
     private final String method;
     private final Map<String, String> headers = new HashMap<>();
@@ -98,10 +105,17 @@ public class Http {
     }
 
     /**
-     * Closes and shuts down all Http Clients
+     * Shuts down all cached JDK {@link HttpClient} instances held by this library.
+     * <p>
+     * The cache is JVM-wide and shared by every caller in the same class loader.
+     * Do not call this in a library or shared runtime unless you intend to stop
+     * HTTP traffic for all simple-http users in that JVM.
      */
     public static void shutdown() {
-        Utils.shutdown();
+        synchronized (CLIENT_LOCK) {
+            HTTP_CLIENTS.values().forEach(HttpClient::shutdownNow);
+            HTTP_CLIENTS.clear();
+        }
     }
 
     /**
@@ -150,9 +164,10 @@ public class Http {
      * Adds a failsafe scoped to this {@code Http} instance. Reuse the same instance
      * across calls to accumulate failures.
      *
-     * @param threshold The threshold for the failsafe
+     * @param threshold The threshold for the failsafe; must be positive
      * @param delay The delay until the next request
      * @return The Http instance
+     * @throws IllegalArgumentException if {@code threshold} is zero or negative
      */
     public Http withFailsafe(int threshold, Duration delay) {
         Objects.requireNonNull(delay, "delay can not be null");
@@ -267,7 +282,7 @@ public class Http {
             return Utils.blockedByFailsafe(result);
         }
 
-        var httpClient = Utils.getHttpClient(followRedirects, disableValidation, proxy);
+        var httpClient = getHttpClient(followRedirects, disableValidation, proxy);
         try {
             var requestBuilder = HttpRequest.newBuilder()
                     .uri(Utils.toAllowedUri(url))
@@ -319,5 +334,37 @@ public class Http {
         }
 
         return result;
+    }
+
+    private static HttpClient getHttpClient(boolean followRedirects, boolean disableValidation, InetSocketAddress proxy) {
+        var key = String.valueOf(followRedirects) + disableValidation;
+
+        if (proxy != null) {
+            key = key + proxy.getHostString() + ":" + proxy.getPort();
+        }
+
+        synchronized (CLIENT_LOCK) {
+            return HTTP_CLIENTS.compute(key, (cacheKey, existing) -> {
+                if (existing != null && !existing.isTerminated()) {
+                    return existing;
+                }
+
+                var clientBuilder = HttpClient.newBuilder().executor(EXECUTOR);
+
+                if (followRedirects) {
+                    clientBuilder.followRedirects(HttpClient.Redirect.NORMAL);
+                }
+
+                if (disableValidation) {
+                    Utils.applyDisableValidation(clientBuilder);
+                }
+
+                if (proxy != null) {
+                    clientBuilder.proxy(ProxySelector.of(proxy));
+                }
+
+                return clientBuilder.build();
+            });
+        }
     }
 }

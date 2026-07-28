@@ -46,10 +46,10 @@ public class Result {
     }
 
     /**
-     * @return The binaryBody of the HTTP response
+     * @return A copy of the binary response body, or {@code null} if none was set
      */
     public byte[] binaryBody() {
-        return binaryBody;
+        return binaryBody == null ? null : Arrays.copyOf(binaryBody, binaryBody.length);
     }
 
     /**

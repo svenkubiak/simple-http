@@ -98,4 +98,15 @@ class ResultTests {
         assertThat(result).isNotNull();
         assertThat(result.isValid(expected)).isFalse();
     }
+
+    @Test
+    void testBinaryBodyReturnsCopy() {
+        byte[] original = new byte[]{1, 2, 3};
+        Result result = Result.create().withBinaryBody(original);
+
+        byte[] returned = result.binaryBody();
+        returned[0] = 99;
+
+        assertThat(result.binaryBody()).containsExactly(1, 2, 3);
+    }
 }
