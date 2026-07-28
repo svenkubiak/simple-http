@@ -243,12 +243,12 @@ class HttpTests {
     }
 
     @Test
-    void testWithRequestFailsafe(WireMockRuntimeInfo runtime) {
+    void testWithFailsafe(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(get("/test-failsafe").willReturn(badRequest()));
         var request = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe")
-                .withRequestFailsafe(2, Duration.of(10, SECONDS));
+                .withFailsafe(2, Duration.of(10, SECONDS));
 
         //when
         Result result = request.send();
@@ -274,76 +274,15 @@ class HttpTests {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
-    void testDeprecatedWithFailsafeByUrl(WireMockRuntimeInfo runtime) {
-        //given
-        WireMock wireMock = runtime.getWireMock();
-        wireMock.register(get("/test-failsafe-deprecated").willReturn(badRequest()));
-        String url = runtime.getHttpBaseUrl() + "/test-failsafe-deprecated";
-
-        //when
-        Result result = Http.get(url).withFailsafe(2, Duration.of(10, SECONDS)).send();
-
-        //then
-        assertThat(result.status()).isEqualTo(400);
-
-        //when
-        result = Http.get(url).send();
-
-        //then
-        assertThat(result.status()).isEqualTo(400);
-
-        //when
-        result = Http.get(url).send();
-
-        //then
-        assertThat(result.status()).isEqualTo(-1);
-        assertThat(result.error()).isEqualTo(Utils.FAILSAFE_ACTIVE_MESSAGE);
-    }
-
-    @Test
-    void testWithFailsafeKey(WireMockRuntimeInfo runtime) {
-        //given
-        String key = UUID.randomUUID().toString();
-        WireMock wireMock = runtime.getWireMock();
-        wireMock.register(get("/test-failsafe-key").willReturn(badRequest()));
-
-        //when
-        Result result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe-key")
-                .withFailsafe(key, 2, Duration.of(10, SECONDS))
-                .send();
-
-        //then
-        assertThat(result.status()).isEqualTo(400);
-
-        //when
-        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe-key")
-                .withFailsafe(key, 2, Duration.of(10, SECONDS))
-                .send();
-
-        //then
-        assertThat(result.status()).isEqualTo(400);
-
-        //when
-        result = Http.get(runtime.getHttpBaseUrl() + "/test-failsafe-key")
-                .withFailsafe(key, 2, Duration.of(10, SECONDS))
-                .send();
-
-        //then
-        assertThat(result.status()).isEqualTo(-1);
-        assertThat(result.error()).isEqualTo(Utils.FAILSAFE_ACTIVE_MESSAGE);
-    }
-
-    @Test
-    void testWithRequestFailsafeNotSharedAcrossInstances(WireMockRuntimeInfo runtime) {
+    void testWithFailsafeNotSharedAcrossInstances(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(get("/test-failsafe-isolated").willReturn(badRequest()));
         String url = runtime.getHttpBaseUrl() + "/test-failsafe-isolated";
 
         //when
-        Result first = Http.get(url).withRequestFailsafe(1, Duration.of(10, SECONDS)).send();
-        Result second = Http.get(url).withRequestFailsafe(1, Duration.of(10, SECONDS)).send();
+        Result first = Http.get(url).withFailsafe(1, Duration.of(10, SECONDS)).send();
+        Result second = Http.get(url).withFailsafe(1, Duration.of(10, SECONDS)).send();
 
         //then
         assertThat(first.status()).isEqualTo(400);
@@ -546,20 +485,6 @@ class HttpTests {
     void testWithMaxResponseSizeRejectsZero() {
         assertThatThrownBy(() -> Http.get("https://example.com").withMaxResponseSize(0))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("withUnlimitedResponseSize");
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    void testWithUnlimitedResponseSize(WireMockRuntimeInfo runtime) {
-        WireMock wireMock = runtime.getWireMock();
-        wireMock.register(get("/unlimited").willReturn(ok().withBody(RESPONSE)));
-
-        Result result = Http.get(runtime.getHttpBaseUrl() + "/unlimited")
-                .withUnlimitedResponseSize()
-                .send();
-
-        assertThat(result.status()).isEqualTo(200);
-        assertThat(result.body()).isEqualTo(RESPONSE);
+                .hasMessage("maxBytes must be positive");
     }
 }

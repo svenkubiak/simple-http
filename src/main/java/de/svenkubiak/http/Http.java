@@ -14,14 +14,11 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class Http {
-    public static final long DEFAULT_MAX_RESPONSE_SIZE = 64L * 1024 * 1024; //Default maximum response body size: 64 MiB.
-
-    private static final Map<String, Failsafe> SHARED_FAILSAFES = new ConcurrentHashMap<>();
+    private static final long DEFAULT_MAX_RESPONSE_SIZE = 64L * 1024 * 1024; //Default maximum response body size: 64 MiB.
     private final String method;
     private final Map<String, String> headers = new HashMap<>();
     private String url;
@@ -34,7 +31,6 @@ public class Http {
     private boolean binaryResponse;
     private long maxResponseSize = DEFAULT_MAX_RESPONSE_SIZE;
     private Failsafe failsafe;
-    private String failsafeKey;
 
     private Http(String url, String method) {
         this.url = Objects.requireNonNull(url, "url can not be null");
@@ -158,50 +154,9 @@ public class Http {
      * @param delay The delay until the next request
      * @return The Http instance
      */
-    public Http withRequestFailsafe(int threshold, Duration delay) {
-        Objects.requireNonNull(delay, "delay can not be null");
-        this.failsafe = Failsafe.of(threshold, delay);
-        this.failsafeKey = null;
-
-        return this;
-    }
-
-    /**
-     * Adds a failsafe shared JVM-wide by URL. New {@code Http} instances for the same
-     * URL share the same circuit-breaker state.
-     *
-     * @param threshold The threshold for the failsafe
-     * @param delay The delay until the next request
-     * @return The Http instance
-     * @deprecated Use {@link #withRequestFailsafe(int, Duration)} for instance-local state,
-     *             or {@link #withFailsafe(String, int, Duration)} to share state by an explicit key.
-     *             URL-based failsafe state is JVM-global and may interfere across unrelated callers.
-     */
-    @Deprecated(since = "2.0.8", forRemoval = true)
     public Http withFailsafe(int threshold, Duration delay) {
         Objects.requireNonNull(delay, "delay can not be null");
-        this.failsafe = null;
-        this.failsafeKey = null;
-        Utils.addFailsafe(url, Failsafe.of(threshold, delay));
-
-        return this;
-    }
-
-    /**
-     * Adds a failsafe shared by an explicit key across {@code Http} instances.
-     * Use this when multiple callers should share the same circuit-breaker state.
-     *
-     * @param key A caller-defined key to group failsafe state
-     * @param threshold The threshold for the failsafe
-     * @param delay The delay until the next request
-     * @return The Http instance
-     */
-    public Http withFailsafe(String key, int threshold, Duration delay) {
-        Objects.requireNonNull(key, "key can not be null");
-        Objects.requireNonNull(delay, "delay can not be null");
-        this.failsafeKey = key;
-        this.failsafe = null;
-        SHARED_FAILSAFES.computeIfAbsent(key, ignored -> Failsafe.of(threshold, delay));
+        this.failsafe = Failsafe.of(threshold, delay);
 
         return this;
     }
@@ -293,24 +248,9 @@ public class Http {
      */
     public Http withMaxResponseSize(long maxBytes) {
         if (maxBytes <= 0) {
-            throw new IllegalArgumentException(
-                    "maxBytes must be positive; use withUnlimitedResponseSize() to disable the response size limit");
+            throw new IllegalArgumentException("maxBytes must be positive");
         }
         this.maxResponseSize = maxBytes;
-        return this;
-    }
-
-    /**
-     * Disables the response body size limit. The full response is buffered in memory.
-     * Do not use with untrusted or user-controlled endpoints.
-     *
-     * @return The Http instance
-     * @deprecated Prefer {@link #withMaxResponseSize(long)} with an explicit limit.
-     *             Unlimited responses can cause out-of-memory errors.
-     */
-    @Deprecated(since = "2.1.1", forRemoval = true)
-    public Http withUnlimitedResponseSize() {
-        this.maxResponseSize = 0;
         return this;
     }
 
@@ -323,12 +263,7 @@ public class Http {
 
     public Result send() {
         var result = Result.create();
-        if (Utils.activeFailsafe(url)) {
-            return Utils.blockedByFailsafe(result);
-        }
-
-        var currentFailsafe = resolveFailsafe();
-        if (currentFailsafe != null && currentFailsafe.isActive()) {
+        if (failsafe != null && failsafe.isActive()) {
             return Utils.blockedByFailsafe(result);
         }
 
@@ -344,51 +279,23 @@ public class Http {
                 headers.forEach(requestBuilder::header);
             }
 
-            if (maxResponseSize > 0) {
-                HttpResponse<InputStream> response = httpClient.send(
-                        requestBuilder.build(),
-                        HttpResponse.BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> response = httpClient.send(
+                    requestBuilder.build(),
+                    HttpResponse.BodyHandlers.ofInputStream());
 
-                response
-                        .headers()
-                        .map()
-                        .forEach((key, value) -> result.withHeader(key, value.getFirst()));
+            response
+                    .headers()
+                    .map()
+                    .forEach((key, value) -> result.withHeader(key, value.getFirst()));
 
-                try (InputStream inputStream = response.body()) {
-                    byte[] data = Utils.readLimited(inputStream, maxResponseSize);
-                    result.withStatus(response.statusCode());
-                    if (binaryResponse) {
-                        result.withBinaryBody(data);
-                    } else {
-                        result.withBody(new String(data, StandardCharsets.UTF_8));
-                    }
+            try (InputStream inputStream = response.body()) {
+                byte[] data = Utils.readLimited(inputStream, maxResponseSize);
+                result.withStatus(response.statusCode());
+                if (binaryResponse) {
+                    result.withBinaryBody(data);
+                } else {
+                    result.withBody(new String(data, StandardCharsets.UTF_8));
                 }
-            } else if (binaryResponse) {
-                HttpResponse<byte []> response = httpClient.send(
-                        requestBuilder.build(),
-                        HttpResponse.BodyHandlers.ofByteArray());
-
-                response
-                        .headers()
-                        .map()
-                        .forEach((key, value) -> result.withHeader(key, value.getFirst()));
-
-                result
-                        .withBinaryBody(response.body())
-                        .withStatus(response.statusCode());
-            } else {
-                HttpResponse<String> response = httpClient.send(
-                        requestBuilder.build(),
-                        HttpResponse.BodyHandlers.ofString());
-
-                response
-                        .headers()
-                        .map()
-                        .forEach((key, value) -> result.withHeader(key, value.getFirst()));
-
-                result
-                        .withBody(response.body())
-                        .withStatus(response.statusCode());
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -403,24 +310,14 @@ public class Http {
             }
         }
 
-        if (currentFailsafe != null) {
+        if (failsafe != null) {
             if (result.isValid()) {
-                currentFailsafe.success();
+                failsafe.success();
             } else {
-                currentFailsafe.error();
+                failsafe.error();
             }
         }
 
-        Utils.setFailsafe(url, result);
-
         return result;
-    }
-
-    private Failsafe resolveFailsafe() {
-        if (failsafeKey != null) {
-            return SHARED_FAILSAFES.get(failsafeKey);
-        }
-
-        return failsafe;
     }
 }

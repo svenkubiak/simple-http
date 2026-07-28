@@ -1,6 +1,6 @@
 [![Maven Central](https://img.shields.io/maven-central/v/de.svenkubiak/simple-http)](https://mvnrepository.com/artifact/de.svenkubiak/simple-http)
 [![Coverage](https://sonar.svenkubiak.de/badges/simple-http)](https://sonar.svenkubiak.de/badges/simple-http)
-![SemVer](https://img.shields.io/badge/SemVer-2.1.x-green)
+![SemVer](https://img.shields.io/badge/SemVer-2.0.0-green)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-%F0%9F%8D%BA-yellow)](https://buymeacoffee.com/svenkubiak)
 
 Real Simple HTTP Java Client Library
@@ -11,6 +11,8 @@ Zero-dependency HTTP client that wraps around the default Java HTTP Client which
 1.x requires Java 21.
 
 2.x requires Java 25.
+
+3.x requires Java 25.
 
 Supports GET, POST, PUT, PATCH and DELETE. Sync requests only.
 
@@ -100,7 +102,7 @@ var result = Http
     .send();
 ```
 
-`withMaxResponseSize(0)` is not allowed. To disable the limit explicitly, use the deprecated `withUnlimitedResponseSize()` only for trusted endpoints (see Security).
+`withMaxResponseSize()` requires a positive value. There is no unlimited response mode.
 
 GET request with following redirects (development/testing only — see Security)
 
@@ -143,37 +145,36 @@ Security
 
 **User-supplied URLs:** Do not enable `followRedirects()` for URLs provided by users. Redirects can reach internal endpoints (SSRF). Validate URLs in your application and block private or link-local IP ranges where possible.
 
-**Response size:** Requests default to a 64 MiB response limit. Avoid `withUnlimitedResponseSize()` for untrusted endpoints; prefer `withMaxResponseSize(long)` with an explicit limit. For large downloads from trusted sources, use `binaryResponse()` and handle the byte array responsibly.
+**Response size:** Requests default to a 64 MiB response limit. Use `withMaxResponseSize(long)` to set an explicit limit for larger trusted responses. For large downloads, use `binaryResponse()` and handle the byte array responsibly.
 
 **Authentication:** Pass tokens via headers (for example `Authorization: Bearer …`). The library does not log requests or responses. Avoid logging headers or bodies that contain credentials in your application code.
 
 Failsafe
 ------------------
-Since version 1.1.0 you can use a circuit breaker inspired failsafe. After n failed requests (= all non-2xx status) further requests are paused until a configured delay has passed.
+You can use a circuit breaker inspired failsafe. After n failed requests (= all non-2xx status) further requests are paused until a configured delay has passed.
 
-Recommended: scope failsafe to the `Http` instance and reuse it across calls:
+Scope failsafe to the `Http` instance and reuse it across calls:
 
 ```
 var request = Http
     .get("https://github.com")
-    .withRequestFailsafe(3, Duration.of(5, ChronoUnit.MINUTES));
+    .withFailsafe(3, Duration.of(5, ChronoUnit.MINUTES));
 
 var result = request.send();
 // ...
 result = request.send();
 ```
 
-To share failsafe state across multiple callers, pass an explicit key:
-
-```
-var result = Http
-    .get("https://github.com")
-    .withFailsafe("github-api", 3, Duration.of(5, ChronoUnit.MINUTES))
-    .send();
-```
-
-Deprecated: `withFailsafe(int, Duration)` still registers failsafe state JVM-wide by URL. Prefer `withRequestFailsafe(int, Duration)` or `withFailsafe(String, int, Duration)` instead.
-
 When failsafe is active, `send()` returns `status() == -1` and `error()` contains `"Failsafe is active; request was not sent"`.
 
-Failsafe state is thread-safe; the same `Http` instance or shared key can be used from multiple threads.
+Failsafe state is thread-safe; the same `Http` instance can be used from multiple threads.
+
+Migration from 2.x
+------------------
+
+| 2.x | 3.0 |
+|-----|-----|
+| `withRequestFailsafe(int, Duration)` | `withFailsafe(int, Duration)` |
+| `withFailsafe(String key, int, Duration)` | Removed — reuse the same `Http` instance |
+| `withFailsafe(int, Duration)` (URL-global, deprecated) | Removed — reuse the same `Http` instance |
+| `withUnlimitedResponseSize()` | Removed — use `withMaxResponseSize(long)` |
