@@ -29,22 +29,6 @@ Add the simple-http dependency to your pom.xml:
 </dependency>
 ```
 
-Defaults
-------------------
-
-Every request starts with these defaults unless you override them:
-
-| Setting | Default |
-|---------|---------|
-| Timeout | 10 seconds |
-| HTTP version | HTTP/2 (downgrades to HTTP/1.1 if needed) |
-| Redirects | Not followed |
-| TLS validation | Strict (system trust store) |
-| Response size limit | 64 MiB (override with `withMaxResponseSize(long)`) |
-| Allowed URL schemes | `http` and `https` only |
-
-Configuration is done through the fluent methods on `Http` (for example `withTimeout`, `withProxy`, `withMaxResponseSize`). The underlying JDK `HttpClient` is not exposed directly.
-
 Examples
 ------------------
 
@@ -113,6 +97,23 @@ var result = Http
     .send();
 ```
 
+Defaults
+------------------
+
+Every request starts with these defaults unless you override them:
+
+| Setting | Default |
+|---------|---------|
+| Timeout | 10 seconds |
+| HTTP version | HTTP/2 (downgrades to HTTP/1.1 if needed) |
+| Redirects | Not followed |
+| TLS validation | Strict (system trust store) |
+| Response size limit | 64 MiB (override with `withMaxResponseSize(long)`) |
+| Allowed URL schemes | `http` and `https` only |
+
+Configuration is done through the fluent methods on `Http` (for example `withTimeout`, `withProxy`, `withMaxResponseSize`). The underlying JDK `HttpClient` is not exposed directly.
+
+
 Errors
 ------------------
 
@@ -177,13 +178,3 @@ You can use a circuit breaker inspired failsafe. After n failed requests (= all 
 Configure failsafe once on an `Http` instance and reuse that instance for every call that should share the circuit breaker (see Thread safety above).
 
 When failsafe is active, `send()` returns `status() == -1` and `error()` contains `"Failsafe is active; request was not sent"`.
-
-Migration from 2.x
-------------------
-
-| 2.x | 3.0 |
-|-----|-----|
-| `withRequestFailsafe(int, Duration)` | `withFailsafe(int, Duration)` |
-| `withFailsafe(String key, int, Duration)` | Removed — reuse the same `Http` instance |
-| `withFailsafe(int, Duration)` (URL-global, deprecated) | Removed — reuse the same `Http` instance |
-| `withUnlimitedResponseSize()` | Removed — use `withMaxResponseSize(long)` |
