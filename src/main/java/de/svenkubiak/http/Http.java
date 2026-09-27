@@ -271,9 +271,7 @@ public class Http {
 
     private void setBody(String body) {
         Objects.requireNonNull(body, "body can not be null");
-        if (this.body == null || this.body.isEmpty()) {
-            this.body = body;
-        }
+        this.body = body;
     }
 
     public Result send() {

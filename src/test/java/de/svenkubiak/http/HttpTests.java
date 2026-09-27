@@ -246,6 +246,157 @@ class HttpTests {
     }
 
     @Test
+    void testWithBodyOverwritesPreviousBody(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(post("/test-body-overwrite")
+                .withRequestBody(equalTo("second"))
+                .willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Result result = Http.post(runtime.getHttpBaseUrl() + "/test-body-overwrite")
+                .withBody("first")
+                .withBody("second")
+                .send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
+        assertThat(result.isValid()).isTrue();
+    }
+
+    @Test
+    void testWithBodyOverwritesAcrossSeparateCalls(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(post("/test-body-conditional")
+                .withRequestBody(equalTo("{\"special\":true}"))
+                .willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Http request = Http.post(runtime.getHttpBaseUrl() + "/test-body-conditional");
+        request.withBody("{\"default\":true}");
+        request.withBody("{\"special\":true}");
+        Result result = request.send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
+        assertThat(result.isValid()).isTrue();
+    }
+
+    @Test
+    void testWithBodyResetsToEmpty(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(post("/test-body-reset")
+                .withRequestBody(absent())
+                .willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Result result = Http.post(runtime.getHttpBaseUrl() + "/test-body-reset")
+                .withBody("secret")
+                .withBody("")
+                .send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
+        assertThat(result.isValid()).isTrue();
+    }
+
+    @Test
+    void testWithFormOverwritesPreviousForm(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(post("/test-form-overwrite")
+                .withRequestBody(equalTo("foo=second"))
+                .willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Result result = Http.post(runtime.getHttpBaseUrl() + "/test-form-overwrite")
+                .withForm(Map.of("foo", "first"))
+                .withForm(Map.of("foo", "second"))
+                .send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
+        assertThat(result.isValid()).isTrue();
+    }
+
+    @Test
+    void testWithFormOverwritesPreviousBody(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(post("/test-form-after-body")
+                .withRequestBody(equalTo("foo=bar"))
+                .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+                .willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Result result = Http.post(runtime.getHttpBaseUrl() + "/test-form-after-body")
+                .withBody("{\"ignored\":true}")
+                .withForm(Map.of("foo", "bar"))
+                .send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
+        assertThat(result.isValid()).isTrue();
+    }
+
+    @Test
+    void testWithBodyOverwritesPreviousForm(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(post("/test-body-after-form")
+                .withRequestBody(equalTo("{\"event\":\"ping\"}"))
+                .willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Result result = Http.post(runtime.getHttpBaseUrl() + "/test-body-after-form")
+                .withForm(Map.of("password", "secret"))
+                .withBody("{\"event\":\"ping\"}")
+                .send();
+
+        //then
+        assertThat(result).isNotNull();
+        assertThat(result.body()).isEqualTo(RESPONSE);
+        assertThat(result.isValid()).isTrue();
+    }
+
+    @Test
+    void testReusedInstanceDoesNotLeakBodyToNextTarget(WireMockRuntimeInfo runtime) {
+        //given
+        WireMock wireMock = runtime.getWireMock();
+        wireMock.register(post("/login")
+                .withRequestBody(equalTo("password=secret"))
+                .willReturn(ok().withBody(RESPONSE)));
+        wireMock.register(post("/telemetry")
+                .withRequestBody(equalTo("{\"event\":\"ping\"}"))
+                .willReturn(ok().withBody(RESPONSE)));
+
+        //when
+        Http request = Http.post(runtime.getHttpBaseUrl() + "/login").withForm(Map.of("password", "secret"));
+        Result first = request.send();
+
+        Result second = request
+                .withUrl(runtime.getHttpBaseUrl() + "/telemetry")
+                .withBody("{\"event\":\"ping\"}")
+                .send();
+
+        //then
+        assertThat(first).isNotNull();
+        assertThat(first.isValid()).isTrue();
+        assertThat(second).isNotNull();
+        assertThat(second.isValid()).isTrue();
+
+        wireMock.verifyThat(0, postRequestedFor(urlEqualTo("/telemetry"))
+                .withRequestBody(containing("password")));
+    }
+
+    @Test
     void testWithFailsafe(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
