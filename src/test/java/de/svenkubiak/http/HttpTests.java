@@ -213,7 +213,7 @@ class HttpTests {
 
         //then
         assertThat(result).isNotNull();
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
     }
 
     @Test
@@ -228,7 +228,7 @@ class HttpTests {
 
         //then
         assertThat(result).isNotNull();
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
     }
 
     @Test
@@ -242,7 +242,7 @@ class HttpTests {
 
         //then
         assertThat(result).isNotNull();
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
     }
 
     @Test
@@ -262,7 +262,7 @@ class HttpTests {
         //then
         assertThat(result).isNotNull();
         assertThat(result.body()).isEqualTo(RESPONSE);
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
     }
 
     @Test
@@ -282,7 +282,7 @@ class HttpTests {
         //then
         assertThat(result).isNotNull();
         assertThat(result.body()).isEqualTo(RESPONSE);
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
     }
 
     @Test
@@ -302,7 +302,7 @@ class HttpTests {
         //then
         assertThat(result).isNotNull();
         assertThat(result.body()).isEqualTo(RESPONSE);
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
     }
 
     @Test
@@ -322,7 +322,7 @@ class HttpTests {
         //then
         assertThat(result).isNotNull();
         assertThat(result.body()).isEqualTo(RESPONSE);
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
     }
 
     @Test
@@ -343,7 +343,7 @@ class HttpTests {
         //then
         assertThat(result).isNotNull();
         assertThat(result.body()).isEqualTo(RESPONSE);
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
     }
 
     @Test
@@ -363,17 +363,17 @@ class HttpTests {
         //then
         assertThat(result).isNotNull();
         assertThat(result.body()).isEqualTo(RESPONSE);
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
     }
 
     @Test
-    void testReusedInstanceDoesNotLeakBodyToNextTarget(WireMockRuntimeInfo runtime) {
+    void testReusedInstanceDoesNotLeakBodyToNextSend(WireMockRuntimeInfo runtime) {
         //given
         WireMock wireMock = runtime.getWireMock();
         wireMock.register(post("/login")
                 .withRequestBody(equalTo("password=secret"))
                 .willReturn(ok().withBody(RESPONSE)));
-        wireMock.register(post("/telemetry")
+        wireMock.register(post("/login")
                 .withRequestBody(equalTo("{\"event\":\"ping\"}"))
                 .willReturn(ok().withBody(RESPONSE)));
 
@@ -382,18 +382,19 @@ class HttpTests {
         Result first = request.send();
 
         Result second = request
-                .withUrl(runtime.getHttpBaseUrl() + "/telemetry")
                 .withBody("{\"event\":\"ping\"}")
                 .send();
 
         //then
         assertThat(first).isNotNull();
-        assertThat(first.isValid()).isTrue();
+        assertThat(first.isSuccess()).isTrue();
         assertThat(second).isNotNull();
-        assertThat(second.isValid()).isTrue();
+        assertThat(second.isSuccess()).isTrue();
 
-        wireMock.verifyThat(0, postRequestedFor(urlEqualTo("/telemetry"))
-                .withRequestBody(containing("password")));
+        wireMock.verifyThat(1, postRequestedFor(urlEqualTo("/login"))
+                .withRequestBody(equalTo("password=secret")));
+        wireMock.verifyThat(1, postRequestedFor(urlEqualTo("/login"))
+                .withRequestBody(equalTo("{\"event\":\"ping\"}")));
     }
 
     @Test
@@ -424,7 +425,7 @@ class HttpTests {
         //then
         assertThat(result).isNotNull();
         assertThat(result.status()).isEqualTo(-1);
-        assertThat(result.error()).isEqualTo(Utils.FAILSAFE_ACTIVE_MESSAGE);
+        assertThat(result.body()).isEqualTo(Utils.FAILSAFE_ACTIVE_MESSAGE);
     }
 
     @Test
@@ -479,7 +480,7 @@ class HttpTests {
         Http.shutdown();
         Result result = Http.get(runtime.getHttpBaseUrl() + "/test-after-shutdown").send();
 
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
         assertThat(result.body()).isEqualTo(RESPONSE);
     }
 
@@ -527,7 +528,7 @@ class HttpTests {
         assertThat(result).isNotNull();
         assertThat(result.body()).isEqualTo(responseBody);
         assertThat(result.status()).isEqualTo(200);
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
     }
 
     @Test
@@ -555,26 +556,7 @@ class HttpTests {
         );
         assertThat(result).isNotNull();
         assertThat(result.body()).isEqualTo(RESPONSE);
-        assertThat(result.isValid()).isTrue();
-    }
-
-    @Test
-    void testWithUrl(WireMockRuntimeInfo runtime) {
-        //given
-        String initialUrl = runtime.getHttpBaseUrl() + "/initial";
-        String newUrl = runtime.getHttpBaseUrl() + "/new";
-        WireMock wireMock = runtime.getWireMock();
-        wireMock.register(get("/initial").willReturn(notFound()));
-        wireMock.register(get("/new").willReturn(ok().withBody(RESPONSE)));
-
-        //when
-        Result result = Http.get(initialUrl).withUrl(newUrl).send();
-
-        //then
-        assertThat(result).isNotNull();
-        assertThat(result.body()).isEqualTo(RESPONSE);
-        assertThat(result.status()).isEqualTo(200);
-        assertThat(result.isValid()).isTrue();
+        assertThat(result.isSuccess()).isTrue();
     }
 
     @Test
@@ -663,15 +645,18 @@ class HttpTests {
         //then
         assertThat(result200).isNotNull();
         assertThat(result200.status()).isEqualTo(200);
-        assertThat(result200.isValid()).isTrue();
+        assertThat(result200.isSuccess()).isTrue();
+        assertThat(result200.hasStatus(200)).isTrue();
 
         assertThat(result404).isNotNull();
         assertThat(result404.status()).isEqualTo(404);
-        assertThat(result404.isValid()).isFalse();
+        assertThat(result404.isSuccess()).isFalse();
+        assertThat(result404.hasStatus(200, 201)).isFalse();
+        assertThat(result404.hasStatus(404)).isTrue();
 
         assertThat(result500).isNotNull();
         assertThat(result500.status()).isEqualTo(500);
-        assertThat(result500.isValid()).isFalse();
+        assertThat(result500.isSuccess()).isFalse();
     }
 
     @Test
@@ -679,7 +664,7 @@ class HttpTests {
         Result result = Http.get("file:///etc/passwd").send();
 
         assertThat(result.status()).isEqualTo(-1);
-        assertThat(result.error()).contains("Only http and https URLs are allowed");
+        assertThat(result.body()).contains("Only http and https URLs are allowed");
     }
 
     @Test

@@ -1,7 +1,5 @@
 package de.svenkubiak.utils;
 
-import de.svenkubiak.http.Result;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
@@ -122,10 +120,6 @@ public final class Utils {
         }
 
         return uri;
-    }
-
-    public static Result blockedByFailsafe(Result result) {
-        return result.withStatus(-1).withBody(FAILSAFE_ACTIVE_MESSAGE);
     }
 
     public static byte[] readLimited(InputStream inputStream, long maxBytes) throws IOException {

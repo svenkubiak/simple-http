@@ -1,111 +1,94 @@
 package de.svenkubiak.http;
 
-import org.apache.hc.core5.http.HttpStatus;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ResultTests {
     @Test
-    void testWithBody() {
-        //given
+    void testBody() {
         String body = UUID.randomUUID().toString();
 
-        //when
-        Result result = Result.create().withBody(body);
+        Result result = Result.of(200, body, null, Map.of());
 
-        //then
         assertThat(result).isNotNull();
         assertThat(result.body()).isEqualTo(body);
 
-        //given
-        body = null;
+        result = Result.of(-1, null, null, Map.of());
 
-        //when
-        result = Result.create().withBody(body);
-
-        //then
         assertThat(result).isNotNull();
         assertThat(result.body()).isEqualTo("");
     }
 
     @Test
-    void testWithError() {
-        //given
-        String body = UUID.randomUUID().toString();
+    void testStatus() {
+        Result result = Result.of(200, "", null, Map.of());
 
-        //when
-        Result result = Result.create().withBody(body);
-
-        //then
         assertThat(result).isNotNull();
-        assertThat(result.error()).isEqualTo(body);
+        assertThat(result.status()).isEqualTo(200);
     }
 
     @Test
-    void testWithStatus() {
-        //given
-        int status = 200;
-
-        //when
-        Result result = Result.create().withStatus(status);
-
-        //when
-        assertThat(result).isNotNull();
-        assertThat(result.status()).isEqualTo(status);
-    }
-
-    @Test
-    void testWithHeader() {
-        //given
+    void testHeader() {
         String key = UUID.randomUUID().toString();
         String value = UUID.randomUUID().toString();
+        Result result = Result.of(200, "", null, Map.of(key, value));
 
-        //when
-        Result result = Result.create().withHeader(key, value);
-
-        //when
         assertThat(result).isNotNull();
         assertThat(result.header(key)).isEqualTo(value);
     }
 
     @Test
-    void testIsValid() {
-        //given
-        int [] expected = {200, 201}; //NOSONAR
+    void testHeadersAreCopied() {
+        Map<String, String> headers = new HashMap<>();
+        headers.put("k", "v");
+        Result result = Result.of(200, "", null, headers);
 
-        //when
-        Result result = Result.create().withStatus(200);
+        headers.put("k", "changed");
 
-        //then
+        assertThat(result.header("k")).isEqualTo("v");
+    }
+
+    @Test
+    void testIsSuccess() {
+        assertThat(Result.of(200, "", null, Map.of()).isSuccess()).isTrue();
+        assertThat(Result.of(204, "", null, Map.of()).isSuccess()).isTrue();
+        assertThat(Result.of(404, "", null, Map.of()).isSuccess()).isFalse();
+        assertThat(Result.of(-1, "", null, Map.of()).isSuccess()).isFalse();
+    }
+
+    @Test
+    void testHasStatus() {
+        int[] expected = {200, 201};
+
+        Result result = Result.of(200, "", null, Map.of());
+
         assertThat(result).isNotNull();
-        assertThat(result.isValid(expected)).isTrue();
+        assertThat(result.hasStatus(expected)).isTrue();
 
-        //when
-        result = result.withStatus(201);
+        result = Result.of(201, "", null, Map.of());
 
-        //then
         assertThat(result).isNotNull();
-        assertThat(result.isValid(expected)).isTrue();
+        assertThat(result.hasStatus(expected)).isTrue();
 
-        //when
-        result = result.withStatus(203);
+        result = Result.of(203, "", null, Map.of());
 
-        //then
         assertThat(result).isNotNull();
-        assertThat(result.isValid(expected)).isFalse();
+        assertThat(result.hasStatus(expected)).isFalse();
     }
 
     @Test
     void testBinaryBodyReturnsCopy() {
         byte[] original = new byte[]{1, 2, 3};
-        Result result = Result.create().withBinaryBody(original);
+        Result result = Result.of(200, "", original, Map.of());
+        original[0] = 99;
 
         byte[] returned = result.binaryBody();
-        returned[0] = 99;
+        returned[0] = 7;
 
         assertThat(result.binaryBody()).containsExactly(1, 2, 3);
     }

@@ -4,13 +4,13 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-public class Failsafe {
+class Failsafe {
     private final int threshold;
     private final Duration delay;
     private int count = 1;
     private LocalDateTime until;
 
-    public Failsafe(int threshold, Duration delay) {
+    Failsafe(int threshold, Duration delay) {
         if (threshold <= 0) {
             throw new IllegalArgumentException("threshold must be positive");
         }
@@ -18,31 +18,31 @@ public class Failsafe {
         this.delay = Objects.requireNonNull(delay, "delay can not be null");
     }
 
-    public static Failsafe of(int threshold, Duration timeout) {
+    static Failsafe of(int threshold, Duration timeout) {
         return new Failsafe(threshold, timeout);
     }
 
-    public synchronized boolean isActive() {
+    synchronized boolean isActive() {
         return until != null && LocalDateTime.now().isBefore(until);
     }
 
-    public synchronized void error() {
+    synchronized void error() {
         count = count + 1;
         if (count > threshold) {
             until = LocalDateTime.now().plus(delay);
         }
     }
 
-    public synchronized void success() {
+    synchronized void success() {
         count = 1;
         until = null;
     }
 
-    public synchronized int getCount() {
+    synchronized int getCount() {
         return count;
     }
 
-    public synchronized LocalDateTime getUntil() {
+    synchronized LocalDateTime getUntil() {
         return until;
     }
 }

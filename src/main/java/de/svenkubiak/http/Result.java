@@ -3,43 +3,38 @@ package de.svenkubiak.http;
 import de.svenkubiak.utils.Utils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
-public class Result {
-    private final Map<String, String> headers = new HashMap<>();
-    private String body = "";
-    private byte[] binaryBody;
-    private int status = -1;
+/**
+ * Immutable outcome of an {@link Http#send()} call.
+ */
+public final class Result {
+    private final Map<String, String> headers;
+    private final String body;
+    private final byte[] binaryBody;
+    private final int status;
 
-    private Result() {}
-
-    public static Result create() {
-        return new Result();
-    }
-
-    public Result withBody(String body) {
-        this.body = (body == null || body.isEmpty()) ? "" : body;
-        return this;
-    }
-
-    public Result withBinaryBody(byte[] binaryBody) {
-        this.binaryBody = binaryBody;
-        return this;
-    }
-
-    public Result withStatus(int status) {
+    private Result(int status, String body, byte[] binaryBody, Map<String, String> headers) {
         this.status = status;
-        return this;
+        this.body = (body == null || body.isEmpty()) ? "" : body;
+        this.binaryBody = binaryBody == null ? null : Arrays.copyOf(binaryBody, binaryBody.length);
+        this.headers = Collections.unmodifiableMap(new HashMap<>(
+                Objects.requireNonNull(headers, "headers can not be null")));
     }
 
-    public Result withHeader(String key, String value) {
-        this.headers.put(key, value);
-        return this;
+    static Result of(int status, String body, byte[] binaryBody, Map<String, String> headers) {
+        return new Result(status, body, binaryBody, headers);
+    }
+
+    static Result failed(String message) {
+        return new Result(-1, message, null, Map.of());
     }
 
     /**
-     * @return The body of the HTTP response
+     * @return The body of the HTTP response, or the failure text when {@link #status()} is {@code -1}
      */
     public String body() {
         return body;
@@ -63,11 +58,6 @@ public class Result {
     }
 
     /**
-     * @return Any error that might have occurred during the connection
-     */
-    public String error() { return body; }
-
-    /**
      * @return The HTTP status of the request or -1 if establishing a connection failed
      */
     public int status() {
@@ -77,7 +67,7 @@ public class Result {
     /**
      * @return True if the HTTP status matched any 2xx status code, false otherwise
      */
-    public boolean isValid() {
+    public boolean isSuccess() {
         return Utils.isSuccessCode(status);
     }
 
@@ -87,7 +77,7 @@ public class Result {
      * @param expectedStatus One or more expected HTTP status
      * @return True if the HTTP status of the request matches any of the expected status
      */
-    public boolean isValid(int... expectedStatus) {
+    public boolean hasStatus(int... expectedStatus) {
         return Arrays.stream(expectedStatus).anyMatch(expected -> expected == status);
     }
 }

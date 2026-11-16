@@ -37,10 +37,8 @@ HTTP GET call
 ```
 var result = Http.get("https://github.com").send();
 
-if (result.isValid()) {
+if (result.isSuccess()) {
     System.out.println(result.body());
-} else {
-    System.out.println(result.error());
 }
 ```
 
@@ -72,7 +70,7 @@ var result = Http
     .binaryResponse()
     .send();
 
-if (result.isValid()) {
+if (result.isSuccess()) {
     byte[] data = result.binaryBody();
 }
 ```
@@ -117,23 +115,25 @@ Configuration is done through the fluent methods on `Http` (for example `withTim
 Errors
 ------------------
 
-`Result.status()` returns the HTTP status code on success. A value of `-1` means the request did not complete successfully (connection error, timeout, invalid URL, response size exceeded, or active failsafe).
+`Result.status()` returns the HTTP status code when a response was received. A value of `-1` means the request did not complete (connection error, timeout, invalid URL, response size exceeded, or active failsafe). In that case `body()` contains the failure text.
 
-`Result.error()` is an alias for `Result.body()` and contains error details when `status()` is `-1`. On successful HTTP responses, use `body()` for text content or `binaryBody()` when `binaryResponse()` was enabled.
+`isSuccess()` is true for any 2xx status. `hasStatus(int...)` is true when the status equals one of the given codes.
+
+On HTTP responses, use `body()` for text content or `binaryBody()` when `binaryResponse()` was enabled.
 
 ```
 var result = Http.get("https://mydomain.com").send();
 
-if (result.isValid()) {
+if (result.isSuccess()) {
     System.out.println(result.body());
 } else if (result.status() == -1) {
-    System.out.println("Request failed: " + result.error());
+    System.out.println("Request failed: " + result.body());
 } else {
     System.out.println("HTTP " + result.status() + ": " + result.body());
 }
 ```
 
-When failsafe is active, `error()` returns `"Failsafe is active; request was not sent"`.
+When failsafe is active, `body()` returns `"Failsafe is active; request was not sent"`.
 
 Simple HTTP wraps the JDK HTTP client. For background on Java networking, see the [Java 25 networking documentation](https://docs.oracle.com/en/java/javase/25/core/java-networking.html).
 
@@ -177,4 +177,4 @@ You can use a circuit breaker inspired failsafe. After n failed requests (= all 
 
 Configure failsafe once on an `Http` instance and reuse that instance for every call that should share the circuit breaker (see Thread safety above).
 
-When failsafe is active, `send()` returns `status() == -1` and `error()` contains `"Failsafe is active; request was not sent"`.
+When failsafe is active, `send()` returns `status() == -1` and `body()` contains `"Failsafe is active; request was not sent"`.

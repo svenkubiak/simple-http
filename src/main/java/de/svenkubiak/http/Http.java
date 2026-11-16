@@ -28,7 +28,7 @@ public class Http {
     private static final long DEFAULT_MAX_RESPONSE_SIZE = 64L * 1024 * 1024; //Default maximum response body size: 64 MiB.
     private final String method;
     private final Map<String, String> headers = new HashMap<>();
-    private String url;
+    private final String url;
     private String body = "";
     private Duration timeout = Duration.of(10, SECONDS);
     private HttpClient.Version version = HttpClient.Version.HTTP_2;
@@ -51,6 +51,7 @@ public class Http {
      *
      * @param url The url to call
      * @return The Http instance
+     * @throws NullPointerException if {@code url} is null
      */
     public static Http get(String url) {
         return new Http(url, "GET");
@@ -63,6 +64,7 @@ public class Http {
      *
      * @param url The url to call
      * @return The Http instance
+     * @throws NullPointerException if {@code url} is null
      */
     public static Http post(String url) {
         return new Http(url, "POST");
@@ -75,6 +77,7 @@ public class Http {
      *
      * @param url The url to call
      * @return The Http instance
+     * @throws NullPointerException if {@code url} is null
      */
     public static Http put(String url) {
         return new Http(url, "PUT");
@@ -87,6 +90,7 @@ public class Http {
      *
      * @param url The url to call
      * @return The Http instance
+     * @throws NullPointerException if {@code url} is null
      */
     public static Http patch(String url) {
         return new Http(url, "PATCH");
@@ -99,6 +103,7 @@ public class Http {
      *
      * @param url The url to call
      * @return The Http instance
+     * @throws NullPointerException if {@code url} is null
      */
     public static Http delete(String url) {
         return new Http(url, "DELETE");
@@ -118,16 +123,44 @@ public class Http {
         }
     }
 
-    /**
-     * Adds the url to call changing the initial value
-     *
-     * @param url The url to call
-     * @return The Http instance
-     */
-    public Http withUrl(String url) {
-        Objects.requireNonNull(url, "url can not be null");
-        this.url = url;
-        return this;
+    private static String failureMessage(Exception exception) {
+        String message = exception.getMessage();
+        if (message == null || message.isBlank()) {
+            return "";
+        }
+        return Utils.clean(message);
+    }
+
+    private static HttpClient getHttpClient(boolean followRedirects, boolean disableValidation, InetSocketAddress proxy) {
+        var key = String.valueOf(followRedirects) + disableValidation;
+
+        if (proxy != null) {
+            key = key + proxy.getHostString() + ":" + proxy.getPort();
+        }
+
+        synchronized (CLIENT_LOCK) {
+            return HTTP_CLIENTS.compute(key, (cacheKey, existing) -> {
+                if (existing != null && !existing.isTerminated()) {
+                    return existing;
+                }
+
+                var clientBuilder = HttpClient.newBuilder().executor(EXECUTOR);
+
+                if (followRedirects) {
+                    clientBuilder.followRedirects(HttpClient.Redirect.NORMAL);
+                }
+
+                if (disableValidation) {
+                    Utils.applyDisableValidation(clientBuilder);
+                }
+
+                if (proxy != null) {
+                    clientBuilder.proxy(ProxySelector.of(proxy));
+                }
+
+                return clientBuilder.build();
+            });
+        }
     }
 
     /**
@@ -136,6 +169,7 @@ public class Http {
      * @param key The key of the HTTP header
      * @param value The value of the HTTP header
      * @return The Http instance
+     * @throws NullPointerException if {@code key} or {@code value} is null
      */
     public Http withHeader(String key, String value) {
         Objects.requireNonNull(key, "key can not be null");
@@ -152,6 +186,8 @@ public class Http {
      * @param host The hostname of the proxy
      * @param port The port of the proxy
      * @return The Http instance
+     * @throws NullPointerException if {@code host} is null
+     * @throws IllegalArgumentException if {@code port} is negative or greater than 65535
      */
     public Http withProxy(String host, int port) {
         Objects.requireNonNull(host, "host can not be null");
@@ -167,6 +203,7 @@ public class Http {
      * @param threshold The threshold for the failsafe; must be positive
      * @param delay The delay until the next request
      * @return The Http instance
+     * @throws NullPointerException if {@code delay} is null
      * @throws IllegalArgumentException if {@code threshold} is zero or negative
      */
     public Http withFailsafe(int threshold, Duration delay) {
@@ -181,6 +218,7 @@ public class Http {
      *
      * @param timeout The timeout to set
      * @return The Http instance
+     * @throws NullPointerException if {@code timeout} is null
      */
     public Http withTimeout(Duration timeout) {
         this.timeout = Objects.requireNonNull(timeout, "timeout can not be null");
@@ -192,6 +230,7 @@ public class Http {
      *
      * @param version The version to set
      * @return The Http instance
+     * @throws NullPointerException if {@code version} is null
      */
     public Http withVersion(HttpClient.Version version) {
         this.version = Objects.requireNonNull(version, "version can not be null");
@@ -203,6 +242,7 @@ public class Http {
      *
      * @param body The body to set
      * @return The Http instance
+     * @throws NullPointerException if {@code body} is null
      */
     public Http withBody(String body) {
         setBody(body);
@@ -215,6 +255,7 @@ public class Http {
      *
      * @param formData The form data
      * @return The Http instance
+     * @throws NullPointerException if {@code formData} or any of its keys or values is null
      */
     public Http withForm(Map<String, String> formData) {
         setBody(Utils.getFormDataAsString(formData));
@@ -275,11 +316,14 @@ public class Http {
     }
 
     public Result send() {
-        var result = Result.create();
         if (failsafe != null && failsafe.isActive()) {
-            return Utils.blockedByFailsafe(result);
+            return Result.failed(Utils.FAILSAFE_ACTIVE_MESSAGE);
         }
 
+        int status = -1;
+        String responseBody = "";
+        byte[] binary = null;
+        var responseHeaders = new HashMap<String, String>();
         var httpClient = getHttpClient(followRedirects, disableValidation, proxy);
         try {
             var requestBuilder = HttpRequest.newBuilder()
@@ -299,32 +343,27 @@ public class Http {
             response
                     .headers()
                     .map()
-                    .forEach((key, value) -> result.withHeader(key, value.getFirst()));
+                    .forEach((key, value) -> responseHeaders.put(key, value.getFirst()));
 
             try (InputStream inputStream = response.body()) {
                 byte[] data = Utils.readLimited(inputStream, maxResponseSize);
-                result.withStatus(response.statusCode());
+                status = response.statusCode();
                 if (binaryResponse) {
-                    result.withBinaryBody(data);
+                    binary = data;
                 } else {
-                    result.withBody(new String(data, StandardCharsets.UTF_8));
+                    responseBody = new String(data, StandardCharsets.UTF_8);
                 }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            String message = e.getMessage();
-            if (message != null && !message.isBlank()) {
-                result.withBody(Utils.clean(message));
-            }
+            responseBody = failureMessage(e);
         } catch (IOException | URISyntaxException e) {
-            String message = e.getMessage();
-            if (message != null && !message.isBlank()) {
-                result.withBody(Utils.clean(message));
-            }
+            responseBody = failureMessage(e);
         }
 
+        var result = Result.of(status, responseBody, binary, responseHeaders);
         if (failsafe != null) {
-            if (result.isValid()) {
+            if (result.isSuccess()) {
                 failsafe.success();
             } else {
                 failsafe.error();
@@ -332,37 +371,5 @@ public class Http {
         }
 
         return result;
-    }
-
-    private static HttpClient getHttpClient(boolean followRedirects, boolean disableValidation, InetSocketAddress proxy) {
-        var key = String.valueOf(followRedirects) + disableValidation;
-
-        if (proxy != null) {
-            key = key + proxy.getHostString() + ":" + proxy.getPort();
-        }
-
-        synchronized (CLIENT_LOCK) {
-            return HTTP_CLIENTS.compute(key, (cacheKey, existing) -> {
-                if (existing != null && !existing.isTerminated()) {
-                    return existing;
-                }
-
-                var clientBuilder = HttpClient.newBuilder().executor(EXECUTOR);
-
-                if (followRedirects) {
-                    clientBuilder.followRedirects(HttpClient.Redirect.NORMAL);
-                }
-
-                if (disableValidation) {
-                    Utils.applyDisableValidation(clientBuilder);
-                }
-
-                if (proxy != null) {
-                    clientBuilder.proxy(ProxySelector.of(proxy));
-                }
-
-                return clientBuilder.build();
-            });
-        }
     }
 }
