@@ -123,7 +123,7 @@ public final class Utils {
     }
 
     public static byte[] readLimited(InputStream inputStream, long maxBytes) throws IOException {
-        byte[] buffer = new byte[8192];
+        var buffer = new byte[8192];
         var output = new java.io.ByteArrayOutputStream();
         int read;
 

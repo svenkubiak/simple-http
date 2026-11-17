@@ -321,7 +321,7 @@ public class Http {
         }
 
         int status = -1;
-        String responseBody = "";
+        var responseBody = "";
         byte[] binary = null;
         var responseHeaders = new HashMap<String, String>();
         var httpClient = getHttpClient(followRedirects, disableValidation, proxy);
@@ -345,7 +345,7 @@ public class Http {
                     .map()
                     .forEach((key, value) -> responseHeaders.put(key, value.getFirst()));
 
-            try (InputStream inputStream = response.body()) {
+            try (var inputStream = response.body()) {
                 byte[] data = Utils.readLimited(inputStream, maxResponseSize);
                 status = response.statusCode();
                 if (binaryResponse) {
